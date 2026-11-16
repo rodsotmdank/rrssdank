@@ -1,0 +1,1218 @@
+<!doctype html>
+<html lang="es"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Calendario Campaña DANK</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap">
+<style>
+/* Layout: cabecera con avance, calendario de 4 semanas, y fichas de publicación de la semana activa (texto + selector de producto al lado). */
+:root{
+  --bg:#f3f7fc; --surface:#ffffff; --surface2:#e6eef8; --ink:#0f2540; --muted:#4f6279; --line:#d0dbe8;
+  --accent:#0b3d7a; --accent-ink:#ffffff; --warm:#e8731a;
+  --li:#0a66c2; --ig:#c25a0a;
+  --airscrape:#d9640f; --rosta:#1f5fae; --ambos:#0b3d7a;
+  --st-pend:#6b7c93; --st-borr:#d9710f; --st-apro:#1f5fae; --st-publ:#1f8a4c;
+  --danger:#b3261e;
+  --font-body:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-head:'Space Grotesk','Inter',system-ui,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b1727; --surface:#12233a; --surface2:#1a2f4b; --ink:#e8f0fa; --muted:#9db0c8; --line:#243a58;
+  --accent:#5aa0f0; --accent-ink:#08121f; --warm:#f5a05a;
+  --li:#6fb0ff; --ig:#f59a4d;
+  --airscrape:#f5a05a; --rosta:#6fa8ff; --ambos:#a9c4f0;
+  --st-pend:#9db0c8; --st-borr:#f5a05a; --st-apro:#6fa8ff; --st-publ:#4cc27f;
+  --danger:#f08a83; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0b1727; --surface:#12233a; --surface2:#1a2f4b; --ink:#e8f0fa; --muted:#9db0c8; --line:#243a58;
+  --accent:#5aa0f0; --accent-ink:#08121f; --warm:#f5a05a;
+  --li:#6fb0ff; --ig:#f59a4d;
+  --airscrape:#f5a05a; --rosta:#6fa8ff; --ambos:#a9c4f0;
+  --st-pend:#9db0c8; --st-borr:#f5a05a; --st-apro:#6fa8ff; --st-publ:#4cc27f;
+  --danger:#f08a83; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px;line-height:1.5;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
+.wrap{max-width:1120px;margin:0 auto;display:flex;flex-direction:column;gap:24px}
+h1,h2,h3{font-family:var(--font-head);margin:0;text-wrap:balance}
+h1{font-size:26px;line-height:1.15;letter-spacing:-.01em}
+h2{font-size:18px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button,select,input,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:flex-end;justify-content:space-between}
+.top .lead{min-width:0;flex:1 1 320px;display:flex;flex-direction:column;gap:6px}
+.top p{margin:0;color:var(--muted);max-width:60ch}
+.sync{font-size:12px;color:var(--muted)}
+.progress{flex:1 1 320px;max-width:460px;display:flex;flex-direction:column;gap:8px}
+.bar{display:flex;height:10px;border-radius:5px;overflow:hidden;background:var(--surface2)}
+.bar i{display:block;height:100%}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;color:var(--muted)}
+.legend b{color:var(--ink);font-variant-numeric:tabular-nums}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:baseline}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px}
+.cal-scroll{overflow-x:auto}
+.cal{display:grid;grid-template-columns:132px repeat(7,minmax(112px,1fr));min-width:920px}
+.cal>div{padding:8px;border-bottom:1px solid var(--line);border-right:1px solid var(--line);min-height:64px}
+.cal>div:nth-child(8n){border-right:0}
+.cal .h{min-height:0;background:var(--surface2);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.cal .wk{display:flex;flex-direction:column;gap:2px;background:none;border:0;border-bottom:1px solid var(--line);border-right:1px solid var(--line);text-align:left;padding:8px;border-radius:0}
+.cal .wk strong{font-family:var(--font-head);font-size:14px}
+.cal .wk span{font-size:11px;color:var(--muted);line-height:1.3}
+.cal .wk.on{background:var(--surface2)}
+.cal .wk.on strong{color:var(--accent)}
+.cal .day{display:flex;flex-direction:column;gap:4px}
+.cal .day .n{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums}
+.cal .day.today .n{color:var(--accent);font-weight:700}
+.chip{display:flex;align-items:center;gap:5px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:3px 6px;font-size:11px;line-height:1.3;min-width:0}
+.chip:hover{border-color:var(--accent)}
+.chip .pl{font-weight:700;color:#fff;border-radius:3px;padding:0 4px;font-size:10px;flex:none}
+.chip .pl.li{background:var(--li)} .chip .pl.ig{background:var(--ig)}
+html[data-theme="dark"] .chip .pl{color:#10181a}
+.chip .txw{display:flex;flex-direction:column;gap:1px;flex:1;min-width:0}
+.chip .pr{font-size:10px;letter-spacing:.04em;text-transform:uppercase}
+.chip .tx{overflow:hidden;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;min-width:0}
+.chip{align-items:flex-start}.chip .st{margin-top:3px}.chip .pl{margin-top:1px}
+.chip .st{width:8px;height:8px;border-radius:50%;flex:none}
+
+.weeknav{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between}
+.weeknav .info{display:flex;flex-direction:column;gap:4px;min-width:0;flex:1 1 320px}
+.weeknav p{margin:0;color:var(--muted);max-width:68ch}
+.tabs{display:flex;gap:6px;flex-wrap:wrap}
+.tab{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:6px 14px;font-weight:600}
+.tab[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+
+.slots{display:flex;flex-direction:column;gap:16px}
+.slot{display:grid;grid-template-columns:220px minmax(0,1fr);background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden;scroll-margin-top:16px}
+.slot.flash{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.meta{padding:16px;border-right:1px solid var(--line);background:var(--surface2);display:flex;flex-direction:column;gap:8px;min-width:0}
+.meta .date{font-family:var(--font-head);font-weight:700;font-size:18px;text-transform:capitalize}
+.meta .time{font-size:12px;color:var(--muted)}
+.plat{display:inline-block;align-self:flex-start;font-size:12px;font-weight:600;color:#fff;border-radius:4px;padding:2px 8px}
+.plat.li{background:var(--li)} .plat.ig{background:var(--ig)}
+html[data-theme="dark"] .plat{color:#10181a}
+@media (prefers-color-scheme:dark){html:not([data-theme="light"]) .plat,html:not([data-theme="light"]) .chip .pl{color:#10181a}}
+.meta .kv{font-size:12px;color:var(--muted)} .meta .kv b{color:var(--ink);font-weight:600}
+.late{font-size:12px;font-weight:600;color:var(--danger)}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label,.field legend{font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--muted)}
+select,input[type=text],input[type=date]{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 8px;min-width:0}
+.main{padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.compose{display:flex;flex-direction:column;gap:14px}
+textarea{width:100%;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:10px 12px;resize:vertical;min-height:230px;line-height:1.55}
+.compose .field{min-width:0}
+.hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.count{font-size:11px;color:var(--muted);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;font-weight:400}
+.count.over{color:var(--danger);font-weight:600}
+.hint{font-size:12px;color:var(--muted)}
+.actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 12px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+fieldset.prod{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.opt{position:relative}
+.opt input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0}
+.opt span{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:9px 10px;font-weight:500}
+.opt .sw{width:10px;height:10px;border-radius:50%;flex:none}
+.opt input:checked+span{border-color:var(--c);box-shadow:inset 0 0 0 1px var(--c);background:var(--surface2)}
+.opt input:focus-visible+span{outline:2px solid var(--accent);outline-offset:2px}
+details.cco{border:1px dashed var(--line);border-radius:8px;padding:8px 12px}
+details.cco summary{cursor:pointer;font-weight:600;font-size:13px}
+details.cco .in{display:flex;flex-direction:column;gap:10px;margin-top:10px}
+details.cco textarea{min-height:100px}
+.chk{display:flex;gap:8px;align-items:center;font-size:13px}
+
+details.settings{padding:0}
+details.settings>summary{padding:14px 16px;cursor:pointer;font-family:var(--font-head);font-weight:700;font-size:16px}
+.tagst{display:inline-flex;align-self:flex-start;align-items:center;gap:6px;font-size:12px;font-weight:600;border:1px solid var(--c);color:var(--c);border-radius:999px;padding:1px 10px}
+.tagst i{width:8px;height:8px;border-radius:50%;background:var(--c)}
+fieldset.stf{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;min-width:0}
+.exp{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.exp .btn{display:inline-flex;align-items:center;gap:8px}
+.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+details.chkl{border:1px dashed var(--line);border-radius:8px;padding:8px 12px}
+details.chkl summary{cursor:pointer;font-weight:600;font-size:13px}
+details.chkl .in{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.kpi{padding:16px;display:flex;flex-direction:column;gap:14px}
+.kpi h2{margin:0}
+.kpi-sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px}
+.kpi-sum .m{display:flex;flex-direction:column;gap:6px}
+.kpi-sum .big{font-family:var(--font-head);font-size:24px;font-weight:700;font-variant-numeric:tabular-nums}
+.kpi-sum .big small{font-size:13px;font-weight:500;color:var(--muted)}
+.kpi-sum .bar{height:8px}
+.kpi-tbl{overflow-x:auto}
+.kpi-tbl table{border-collapse:collapse;width:100%;min-width:420px}
+.kpi-tbl th,.kpi-tbl td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);font-size:13px}
+.kpi-tbl th{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.kpi-tbl input{width:84px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:4px 8px;font-variant-numeric:tabular-nums}
+.set-grid{padding:0 16px 16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px}
+.set-grid section{display:flex;flex-direction:column;gap:10px;min-width:0}
+.set-grid textarea{min-height:68px}
+.warn{font-size:12px;color:var(--st-borr);background:var(--surface2);border-radius:6px;padding:8px 10px}
+@media (max-width:760px){
+  .slot{grid-template-columns:minmax(0,1fr)}
+  .meta{border-right:0;border-bottom:1px solid var(--line)}
+  .compose{grid-template-columns:minmax(0,1fr)}
+  fieldset.prod{flex-direction:row;flex-wrap:wrap}
+  fieldset.prod .opt{flex:1 1 90px}
+}
+@media (prefers-reduced-motion:no-preference){.slot{transition:box-shadow .2s,border-color .2s}}
+
+.vtabs{margin-right:8px}
+textarea.ttl{min-height:64px;font-weight:600;font-size:15px}
+.hdr{display:flex;align-items:center;gap:10px}
+.hd .btn{padding:3px 10px;font-size:12px}
+details.srcd{border:1px solid var(--warm);border-radius:8px;padding:8px 12px;background:var(--surface)}
+details.srcd summary{cursor:pointer;font-weight:600;font-size:13px}
+details.srcd .in{display:flex;flex-direction:column;gap:12px;margin-top:10px}
+details.srcd .hint{margin:0}
+details.srcd textarea{min-height:84px;font-size:13px;padding:6px 8px}
+details.srcd .use{font-size:12px;color:var(--muted)}
+.top{border-top:4px solid var(--warm);padding-top:14px}
+.eyebrow{color:var(--warm)}
+.fechas{display:flex;flex-direction:column;gap:12px}
+.fechas .fhead{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.fechas h2{font-family:var(--font-head);font-size:18px;margin:0}
+.fadd{display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap}
+.fadd label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:600}
+.fadd input{width:auto}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px}
+.fcard{padding:14px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.fcard.near{border-color:var(--warm)}
+.fcard .ft{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.fcard h3{margin:0;font-family:var(--font-head);font-size:15px}
+.fcard .fd{font-size:12px;color:var(--muted)}
+.fcount{font-size:12px;font-weight:700;border-radius:999px;padding:2px 10px;border:1px solid var(--accent);color:var(--accent);white-space:nowrap}
+.fcount.near{border-color:var(--warm);color:var(--warm)}
+.fcount.hoy{background:var(--warm);border-color:var(--warm);color:#fff}
+.fcard textarea{min-height:260px}
+.fbadge{margin-left:6px;font-size:11px;font-weight:700;color:var(--warm)}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body)}
+.wrap{padding:16px}
+.brand{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px}
+.userbar{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted)}
+.userbar button{font:inherit;font-size:12px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--ink);cursor:pointer}
+.pdfbox{border:1px dashed var(--line);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.pdfbox .pt{font-size:13px;font-weight:600}
+.pdfl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.pdfl li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px}
+.pdfl a{color:var(--accent);font-weight:600;word-break:break-all}
+.filebtn{cursor:pointer;display:inline-flex;align-items:center}
+.pdfb{font-size:9px;font-weight:700;border:1px solid var(--line);border-radius:3px;padding:0 3px;color:var(--muted);margin-left:4px;align-self:flex-start}
+.brand img{height:44px;width:auto;background:#fff;border-radius:8px;padding:4px 10px}
+.wsel{width:auto;display:inline-block;font:inherit;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--warm);border:1px solid var(--warm);border-radius:6px;background:var(--surface);padding:1px 4px}
+.mesa{display:flex;flex-direction:column;gap:14px}
+.mesa h2{font-family:var(--font-head);font-size:18px;margin:0}
+.mesa .sub{color:var(--muted);margin:0;max-width:70ch}
+.mix{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+.mix .panel>span:not(.hint){white-space:nowrap}
+.mix>div{padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.mix b{font-variant-numeric:tabular-nums}
+.metain{width:56px;border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:2px 6px;font-weight:600;font-variant-numeric:tabular-nums}
+.mixbox{cursor:pointer}.mixbox:hover{border-color:var(--accent)}.mixbox.on{border-color:var(--warm);box-shadow:0 0 0 2px var(--warm)}
+.mixdef{font-size:12px;line-height:1.4;white-space:normal;flex:1}
+.mixbtn{border:0;background:none;padding:0;text-align:left;font:inherit;font-size:14px;font-weight:700;color:var(--ink);cursor:pointer}
+.mixbox.on .mixbtn{color:var(--ink);font-weight:600}
+.fbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px;background:var(--surface2);border-radius:8px}
+.pager{display:flex;align-items:center;justify-content:center;gap:12px}
+.pager .btn:disabled{opacity:.45;cursor:default}
+.mix .bar2{height:6px;background:var(--surface2);border-radius:3px;overflow:hidden}
+.mix .bar2 i{display:block;height:100%;background:var(--accent)}
+.mrow{display:grid;grid-template-columns:130px 110px 130px 140px minmax(0,1.6fr) 130px 130px auto;gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.mrow label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:600;min-width:0}
+.mrow textarea,.mrow input,.mrow select{font-size:13px;font-weight:400;color:var(--ink)}
+.mrow textarea{min-height:56px;padding:6px 8px;border-radius:6px}
+.mrow .notes{grid-column:1/-1}
+.mrow.desc{opacity:.55}
+.meet{display:grid;grid-template-columns:150px minmax(0,1fr) minmax(0,2fr) auto;gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.meet label{display:flex;flex-direction:column;gap:2px;font-size:11px;color:var(--muted);font-weight:600}
+.meet textarea{min-height:70px;padding:6px 8px;border-radius:6px;font-size:13px;font-weight:400;color:var(--ink)}
+@media (max-width:900px){.mrow{grid-template-columns:1fr 1fr}.mrow .notes{grid-column:1/-1}.meet{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="brand"><img src="data:image/png;base64,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" alt="Dank" width="160" height="44"><div class="userbar"><span>Sesión: __USER_EMAIL__</span><form method="post" action="/auth/signout" style="margin:0"><button type="submit">Salir</button></form></div></div>
+  <header class="top">
+    <div class="lead">
+      <span class="eyebrow">Campaña ROSTA y Airscrape · <select id="cfg-weeks" class="wsel" data-act="weeks" aria-label="Duración de la campaña"><option value="1">1 semana</option><option value="2">2 semanas</option><option value="3">3 semanas</option><option value="4">4 semanas</option><option value="5">5 semanas</option><option value="6">6 semanas</option><option value="7">7 semanas</option><option value="8">8 semanas</option></select></span>
+      <h1>Calendario de publicaciones</h1>
+      <span class="sync" id="sync" aria-live="polite"></span>
+    </div>
+    <div class="progress" id="progress"></div>
+    <div class="exp"><button class="btn" id="fbtn" type="button" data-act="f-toggle" aria-expanded="false">Fechas importantes</button><button class="btn primary" id="xlsx" type="button">Generar Excel</button><span class="hint" id="xlsx-msg" aria-live="polite"></span></div>
+  </header>
+
+  <section class="fechas" id="fechas" hidden aria-label="Fechas importantes"></section>
+
+  <details class="panel settings vcal" id="settings"></details>
+
+  <section class="mix vcal" id="mix" aria-label="Mezcla de contenido"></section>
+  <section class="panel cal-scroll vcal" aria-label="Calendario de la campaña"><div class="cal" id="cal"></div></section>
+
+
+  <section class="slots vcal" id="slots"></section>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/exceljs@4.4.0/dist/exceljs.min.js"></script>
+<script>
+(function(){
+'use strict';
+const DAYS=['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+const TIPOS=[['tec','Técnico',40,'Explica cómo funciona algo y cuándo se justifica, sin vender. Por ejemplo, «qué revisar si un equipo vibra raro» o «soportes oscilantes: cuándo sí y cuándo no». Busca que el lector aprenda y que te vea como el que sabe.'],
+['sol','Soluciones y aplicaciones',30,'Presenta un producto o sistema aplicado a un problema concreto. Por ejemplo, «Base de motor ROSTA MB» o los componentes de ScrapeTec. Busca que el lector piense «esto resuelve lo mío».'],
+['con','Experiencia y confianza',20,'Muestra el respaldo de DANK y cómo trabajamos. Por ejemplo, «qué preguntamos en una evaluación en terreno». Busca que el lector confíe en que hay un equipo técnico detrás.'],
+['cnv','Conversión comercial',10,'Invita directamente a agendar una evaluación técnica. Por ejemplo, «evaluación técnica en terreno». Busca que el lector dé el paso y te contacte.']];
+const TIPO_MAP={'Técnico':'tec','Soluciones':'sol','Confianza':'con','Conversión':'cnv'};
+function tipoDef(x){return '';}
+const STATUS={noiniciada:['No iniciada','--st-pend'],enproceso:['En proceso','--st-borr'],publicada:['Publicada','--st-publ']};
+const LEGACY={pendiente:'noiniciada',borrador:'enproceso',aprobado:'enproceso',publicado:'publicada'};
+const PRODS={airscrape:['Airscrape','--airscrape'],rosta:['Rosta','--rosta'],ambos:['Ambos','--ambos']};
+const PLAT={li:{name:'LinkedIn',sub:'Página DANK',time:'08:00–09:30',max:3000},ig:{name:'Instagram',sub:'Cuenta DANK',time:'19:00–21:00',max:2200}};
+
+/* Estructura de la campaña. d = días desde el lunes de la semana: martes y jueves LinkedIn, miércoles y viernes Instagram. */
+const WEEKS=[
+ {n:1,title:'DANK como integrador',desc:'Se instala quién es DANK y qué problemas resuelve. Presentación y señales de alerta.',
+  slots:[{d:1,pl:'li',a:'t_integrador',prod:'ambos'},{d:3,pl:'li',a:'senales',prod:'rosta'}]},
+ {n:2,title:'ROSTA: harneros y alimentadores',desc:'Serie ROSTA, tema 1: suspensión y soportes oscilantes.',
+  slots:[{d:1,pl:'li',a:'t_harnero',prod:'rosta'},{d:3,pl:'li',a:'t_soportes',prod:'rosta'}]},
+ {n:3,title:'ROSTA: correas y bases de motor',desc:'Serie ROSTA, tema 2: tensión automática de correas.',
+  slots:[{d:1,pl:'li',a:'t_basemb',prod:'rosta'},{d:3,pl:'li',a:'t_basemb2',prod:'rosta'}]},
+ {n:4,title:'ROSTA: tensores, aisladores y suspensores',desc:'Serie ROSTA, tema 3: tensión constante y menos vibración.',
+  slots:[{d:1,pl:'li',a:'t_tensor',prod:'rosta'},{d:3,pl:'li',a:'t_aislador',prod:'rosta'}]},
+ {n:5,title:'ROSTA: mantenimiento y monitoreo',desc:'Serie ROSTA, tema 4: qué revisar y cómo anticiparse.',
+  slots:[{d:1,pl:'li',a:'t_revisar',prod:'rosta'},{d:3,pl:'li',a:'t_digital',prod:'rosta'}]},
+ {n:6,title:'DANK también trabaja el polvo',desc:'Se abre la segunda línea: Airscrape y el sistema ScrapeTec.',
+  slots:[{d:1,pl:'li',a:'t_polvo',prod:'airscrape'},{d:3,pl:'li',a:'t_scrapetec',prod:'airscrape'}]},
+ {n:7,title:'Airscrape: cuándo sí y cómo evaluamos',desc:'Criterios técnicos y confianza en el método de trabajo.',
+  slots:[{d:1,pl:'li',a:'tecnico',prod:'airscrape'},{d:3,pl:'li',a:'t_preguntas',prod:'ambos'}]},
+ {n:8,title:'Integración y contacto comercial',desc:'Se unen las dos líneas y se invita a la evaluación técnica en terreno.',
+  slots:[{d:1,pl:'li',a:'t_integracion',prod:'ambos'},{d:3,pl:'li',a:'t_evaluacion',prod:'ambos'}]}
+];
+const DEFPROD=['airscrape','rosta','ambos'];
+const ALL_FULL=[];WEEKS.forEach(w=>w.slots.forEach((sl,i)=>{ALL_FULL.push(Object.assign({},sl,{w:w.n,id:'s'+w.n+'-'+sl.d,def:sl.prod||DEFPROD[ALL_FULL.length%3]}));}));
+const ALL=ALL_FULL.slice();
+const AUD={general:['Todas',''],
+ mantenimiento:['Mantenimiento','Para jefes y superintendentes de mantenimiento: menos intervención repetida y menos detenciones no planificadas.'],
+ confiabilidad:['Confiabilidad','Para ingenieros de confiabilidad y planificadores: menos fallas sin aviso y cambios de componentes que se pueden planificar.'],
+ operaciones:['Operaciones','Para jefes de operaciones y de área: más disponibilidad y continuidad operacional.'],
+ compras:['Compras','Para compradores técnicos: lo que importa es el costo total de la operación, no solo el precio unitario.'],
+ tecnicos:['Técnicos y comunidad','Para mecánicos, supervisores y estudiantes: trabajo más seguro y con menos intervención.']};
+const LIAUD=['mantenimiento','confiabilidad','operaciones','compras'];
+(function(){let n=0;ALL_FULL.forEach(x=>{x.defAud=x.pl==='li'?LIAUD[n++%4]:'tecnicos';});})();
+const CHK=[['txt','Texto revisado, sin corchetes ni datos por completar'],['cifras','Cifras verificadas (fabricante o cliente de DANK)'],['cliente','Autorización del cliente si se nombra la planta'],['tags','Hashtags: LinkedIn 3 a 5, Instagram 5 a 8'],['tag','Etiquetar a ROSTA en LinkedIn, si la página del fabricante lo permite'],['pieza','Imagen o video listo en el formato indicado']];
+const chkFor=sl=>CHK.filter(c=>c[0]!=='tag'||sl.pl==='li');
+const KPIS=[['ev','Evaluaciones técnicas solicitadas',10],['dm','Mensajes directos en Instagram',15],['seg','Nuevos seguidores de la página DANK',150]];
+
+/* Plantillas. Cada ángulo trae 4 ganchos y 2 versiones de cuerpo por plataforma; «Generar otra versión» recorre las combinaciones.
+   Tokens: {p} producto(s), {prob}/{Prob} problema, {sol} qué es, {b1}{b2}{b3} beneficios, {pains} costos, {signs} señales,
+   {parts} componentes, {q} pregunta, {cta} contacto. */
+function A(label,hooks,li,ig,cco,fli,fig,vis){return {label,hooks,li,ig,cco,fli,fig,vis};}
+const ANGLES={
+dolor:A('Problema: el dolor en terreno',
+ ['{punch1}','Hay un problema en faena que casi nadie mide.','¿Cuánto le cuesta a su operación convivir con esto?','{punch2}'],
+ ['Lo vemos en terreno con frecuencia: {prob}.\n\nNo es solo un tema de orden. Es lo que hay detrás:\n\n{pains}\n\nCada intervención repetida y cada detención no planificada se paga en producción.',
+  'En muchas operaciones se asume como parte del trabajo: {prob}.\n\nPero tiene consecuencias concretas:\n\n{pains}\n\nNo tiene por qué ser así.'],
+ ['Lo vemos en terreno todos los días.\n\n{pains}\n\nCada una de estas cosas se paga en producción.',
+  'Convivir con esto cuesta más de lo que parece:\n\n{pains}\n\nGuarda este post y mándaselo a tu equipo de mantención.'],
+ ['Comparto esta publicación de DANK porque es un tema que aparece en casi todas mis conversaciones con clientes: {prob}. Me interesa saber cómo lo están viviendo en su operación.',
+  'Una pregunta que me hago seguido en terreno: ¿cuánto cuesta realmente convivir con esto? Les dejo lo que está mostrando el equipo de DANK.'],
+ 'Imagen o carrusel','Carrusel de 3 a 5 láminas','Foto real de terreno o ilustración del punto crítico. Un solo mensaje por lámina.'),
+costo:A('Problema: el costo oculto',
+ ['El costo real de este problema no aparece en una sola factura.','{punch1}','¿Cuántas horas de mantención se van en esto cada mes?','Lo que no se mide, se repite.'],
+ ['El costo de convivir con {prob} se reparte en varios lugares a la vez:\n\n{pains}\n\nPor eso cuesta medirlo: no llega en una sola factura.\n\nUn buen primer paso es registrar durante un mes cuántas horas y cuántas intervenciones se van en esto. Con ese dato, la conversación sobre soluciones cambia.',
+  'Pregunta para el área de mantención: ¿cuántas horas al mes se van en esto?\n\nSi la respuesta no está a mano, ya es una señal. Normalmente el costo de {prob} se reparte en:\n\n{pains}\n\nMedirlo es el primer paso para reducirlo.'],
+ ['El costo no está en una sola línea del presupuesto:\n\n{pains}\n\nMídelo durante un mes y compara.',
+  'Si no sabes cuántas horas se van en esto, ya es una respuesta.\n\n{pains}\n\nCompártelo con quien lleva la mantención.'],
+ ['Una reflexión para mi red: el costo de convivir con {prob} rara vez se mide completo. En DANK lo revisamos con cada cliente antes de proponer una solución.',
+  'Si en su operación nadie sabe cuántas horas se van en esto, vale la pena medirlo. Es lo primero que hacemos con nuestros clientes.'],
+ 'Infografía con los costos','Carrusel de 3 láminas','Infografía de tres columnas, un costo por columna, o carrusel de tres láminas.'),
+pregunta:A('Pregunta a la audiencia',
+ ['{punch2}','¿Te pasa en tu operación?','Pregunta rápida para quienes trabajan en faena.','Queremos escuchar a terreno.'],
+ ['Pregunta para quienes operan o mantienen en faena:\n\n{q}\n\nCuéntennos en los comentarios. Sus respuestas van a orientar lo que publiquemos en las próximas semanas.',
+  'Antes de mostrar nuestra propuesta, queremos escuchar a terreno.\n\n{q}\n\nResponda en los comentarios. Leemos todo.'],
+ ['{q}\n\nResponde con un número en los comentarios:\n1) Todos los días\n2) Una vez por semana\n3) Solo en paradas mayores',
+  'Votación rápida para quienes están en faena.\n\n{q}\n\n1) Todos los días\n2) Cada semana\n3) Casi nunca'],
+ ['Pregunta abierta para mi red:\n\n{q}\n\nLeo todas las respuestas.',
+  'Quiero entender cómo lo viven hoy en terreno.\n\n{q}\n\nLos leo uno a uno.'],
+ 'Post de texto con pregunta','Historia con encuesta o post con pregunta','Post de texto o historia con encuesta. Una sola pregunta y tres opciones.'),
+senales:A('Problema: señales de alerta',
+ ['¿Cuántas de estas señales ya tiene tu operación?','Si ves una de estas señales, tu operación ya está perdiendo dinero.','{punch2}','Esto se ve a simple vista, y casi siempre cuesta más de lo que parece.'],
+ ['Señales de que su operación ya tiene este problema: {prob}.\n\nRevíselas la próxima vez que salga a terreno:\n\n{signs}\n\nSi reconoce una, probablemente hay un costo que no está midiendo. Si reconoce dos o más, conviene revisarlo con datos.',
+  'Se pueden detectar sin instrumentos, solo recorriendo el equipo:\n\n{signs}\n\nNo hace falta un diagnóstico complejo para saber si hay un problema de fondo. Lo que se repite casi siempre tiene una causa común.'],
+ ['Mira esto la próxima vez que salgas a terreno:\n\n{signs}\n\nSi ves una o más, ya tienes el problema.',
+  'Checklist rápido:\n\n{signs}\n\nGuárdalo y úsalo en tu próxima inspección.'],
+ ['Comparto esta lista de DANK para que la revisen con sus equipos. Si reconocen alguna señal en su planta, conversemos.',
+  'Una lista corta que sirve para una revisión en terreno. Si algo de esto les suena, escríbanme.'],
+ 'Carrusel o checklist','Carrusel de checklist','Carrusel de checklist: una señal por lámina y una lámina final de cierre.'),
+teaser:A('Adelanto del lanzamiento',
+ ['El martes mostramos cómo se resuelve.','Algo viene el martes.','{punch3}','Activa el recordatorio.'],
+ ['Esta semana planteamos el problema: {prob}.\n\nEl martes presentamos una animación que explica cómo se aborda con {p}. Son pocos minutos y se entiende a la primera.',
+  'Ya hablamos del problema. El martes toca la solución.\n\nPresentaremos una animación sobre {p}. Si trabaja en minería o industria, le servirá verla con su equipo.'],
+ ['Ya hablamos del problema.\n\nEl martes presentamos una animación sobre {p}.\n\nActiva el recordatorio y no te la pierdas.',
+  'Cuenta regresiva: el martes lanzamos la animación de {p}.\n\nTe va a servir verla con tu equipo.'],
+ ['Esta semana DANK mostró el problema. El martes viene la solución en video y me gustaría que la vean.',
+  'El martes publicamos la animación de {p}. Los invito a verla y a darme su opinión.'],
+ 'Imagen con cuenta regresiva','Story o post teaser de 10 s','Imagen con cuenta regresiva, o el primer segundo de la animación con fondo desenfocado.'),
+lanzamiento:A('Lanzamiento de la animación',
+ ['Presentamos la animación de {p}.','{punch3}','Así funciona {p}, en pocos minutos.','La respuesta a lo que venimos mostrando.'],
+ ['Hace una semana planteamos el problema: {prob}.\n\nHoy lo explicamos en una animación.\n\n{sol}.\n\nLo que verán:\n\n• {b1}\n• {b2}\n• {b3}\n\nMiren el video completo y compártanlo con su equipo de mantención.',
+  'Una animación explica más que un catálogo.\n\nPor eso mostramos {p} en video: {sol}.\n\nLo que se ve en el video:\n\n• {b1}\n• {b2}\n• {b3}\n\nVéanlo completo y cuéntennos qué parte les resultó más útil.'],
+ ['Ya está disponible la animación de {p}.\n\n{b1}.\n{b2}.\n{b3}.\n\nMírala completa y compártela con tu equipo.',
+  'Lo que viste esta semana tiene solución.\n\nAnimación completa de {p}. Mírala y guárdala.'],
+ ['Hoy lanzamos la animación de {p}. En pocos minutos explica cómo se aborda este problema: {prob}. Los invito a verla y a darme su opinión.',
+  'Lo prometido: la animación de {p}. Si trabajan con esto en su operación, vale la pena verla con su equipo técnico.',
+  'Uno de los costos más subestimados en una operación es la intervención repetida: {prob}. Este video muestra cómo se aborda con {p}.'],
+ 'Video completo de la animación','Reel con la animación completa','Video completo (1 a 2 min) con subtítulos. Miniatura con un fotograma del punto crítico.'),
+reel:A('Animación completa en Reel',
+ ['Mira la animación completa.','{punch3}','Así se ve en acción.','Guárdalo para tu próxima reunión.'],
+ ['Para quienes prefieren ver antes que leer: la animación completa de {p}.',
+  'Por si no alcanzaron a verla: la animación de {p}.\n\nSon pocos minutos y muestra qué cambia en la operación.'],
+ ['Animación completa de {p}.\n\nGuarda este reel para mostrarlo en tu equipo.',
+  'Un minuto para entender {p}.\n\nCompártelo con quien decide en tu faena.'],
+ ['Por si no alcanzaron a verla: la animación completa de {p}. Cuéntenme qué parte les pareció más útil.',
+  'Un video corto que explica {p}. Si les sirve, compártanlo con su equipo.'],
+ 'Video completo','Reel completo (30 a 60 s)','Reel vertical 9:16 con la animación completa y subtítulos.'),
+comofunciona:A('Cómo funciona, paso a paso',
+ ['Paso a paso: así funciona.','Por dentro: componente por componente.','{punch2}','Para quienes prefieren leer.'],
+ ['Para quienes prefieren leer: así se aborda este problema, {prob}.\n\n{parts}\n\nLo que cambia en la operación:\n\n1. {b1}\n2. {b2}\n3. {b3}',
+  'Cómo funciona {p}, explicado por partes:\n\n{parts}\n\nCada componente resuelve una parte del problema. Juntos cambian lo que pasa en terreno: {b1}.'],
+ ['Lo que muestra la animación, por partes:\n\n{parts}',
+  'Cómo funciona {p}:\n\n{parts}\n\nGuárdalo para tu próxima reunión técnica.'],
+ ['La animación de la semana tiene una explicación por escrito, componente por componente. La dejo para quienes quieran profundizar con su equipo técnico.',
+  'Para los que prefieren leer: aquí está explicado {p} por partes. Escríbanme si quieren revisarlo con su caso.'],
+ 'Carrusel o documento PDF','Carrusel de 3 a 5 láminas','Carrusel o PDF con una lámina por componente.'),
+beneficios:A('Beneficios clave',
+ ['{punch3}','Lo que cambia en tu operación.','Tres beneficios que se notan en terreno.','Qué gana tu operación.'],
+ ['Con {p}, las operaciones buscan:\n\n• {b1}\n• {b2}\n• {b3}\n\nCada faena es distinta. Revisemos cuál de estos beneficios es el que más le importa a la suya.',
+  'Qué cambia cuando se resuelve este problema ({prob}):\n\n• {b1}\n• {b2}\n• {b3}'],
+ ['Con {p}:\n\n✔ {b1}\n✔ {b2}\n✔ {b3}\n\nCompártelo con quien decide en tu faena.',
+  'Tres cosas que cambian:\n\n✔ {b1}\n✔ {b2}\n✔ {b3}'],
+ ['Tres beneficios concretos de {p} para operaciones mineras e industriales. Si le sirven a su planta, conversemos.',
+  'Resumen de tres beneficios que muestra DANK para {p}. Si alguno les importa en su planta, escríbanme.'],
+ 'Imagen con tres beneficios','Carrusel de 3 láminas','Imagen con tres íconos y un beneficio por ícono.'),
+corteprob:A('Corte: el problema',
+ ['{punch1}','Corte de la animación: el problema en 15 segundos.','¿Reconoces esta escena?','Antes de la solución, el problema.'],
+ ['Un corte de nuestra animación: el problema.\n\n{Prob}.\n\n{pains}\n\nEn el siguiente corte mostramos cómo se resuelve.',
+  '15 segundos para reconocer el problema.\n\nEn este corte de la animación se ve {prob}.\n\n¿Les pasa en su operación? Cuéntennos en los comentarios.'],
+ ['Corte de la animación de {p}: el problema.\n\n{Prob}.\n\nEn el siguiente, la solución.',
+  '¿Reconoces esta escena?\n\n{Prob}.\n\nLa solución, en el próximo corte.'],
+ ['Un corte corto de la animación de DANK muestra el problema de fondo: {prob}. Si lo reconocen en su planta, escríbanme.',
+  'En 15 segundos se entiende el problema. Les dejo el corte. Cuéntenme si lo ven en su operación.'],
+ 'Video corto (15 a 20 s)','Reel de 15 s','Corte de 15 a 20 s con el primer tramo de la animación. Termina en pregunta.'),
+cortemec:A('Corte: cómo funciona',
+ ['Corte de la animación: el mecanismo.','{punch2}','Esto pasa por dentro.','Mira cómo funciona, sin tecnicismos.'],
+ ['Corte de la animación: el mecanismo.\n\n{parts}\n\nVean el corte y cuéntennos si aplica a su operación.',
+  'Cómo actúa {p}, en un corte:\n\n{sol}.'],
+ ['Corte de la animación: así funciona {p}.\n\n{sol}.\n\nMíralo en 15 segundos.',
+  'Esto pasa por dentro.\n\n{parts}'],
+ ['Otro corte de la animación de {p}. Este muestra cómo funciona por dentro. Quedo atento a sus comentarios.',
+  'Si quieren entender el mecanismo sin leer un catálogo, este corte lo muestra. Cuéntenme qué opinan.'],
+ 'Video corto (20 a 30 s)','Reel de 15 a 20 s','Corte de 20 a 30 s del tramo donde se explica el mecanismo, con subtítulos.'),
+cortebenef:A('Corte: el beneficio clave',
+ ['{punch3}','Corte de la animación: el beneficio clave.','El resultado, en 15 segundos.','Una razón para mirarlo.'],
+ ['Corte de la animación: el beneficio que más se nota.\n\n{b1}.\n\nY además:\n\n• {b2}\n• {b3}',
+  'Si tuviera que resumir {p} en una frase: {b1}.\n\nEn este corte de la animación se ve cómo ocurre.\n\nY además:\n\n• {b2}\n• {b3}'],
+ ['Corte de la animación de {p}.\n\nLo que más se nota: {b1}.',
+  'Una razón para mirar este corte:\n\n{b1}.'],
+ ['Un corte de la animación centrado en el beneficio principal de {p}: {b1}. Si les interesa verlo aplicado, hablemos.',
+  'Si tienen 15 segundos: el beneficio clave de {p}. Los leo en los comentarios.'],
+ 'Video corto (15 a 20 s)','Reel de 15 s','Corte de 15 s con el beneficio en texto grande al final.'),
+corteres:A('Corte: el resultado',
+ ['{punch3}','Corte final: el resultado.','Antes y después.','Lo que queda cuando se resuelve.'],
+ ['Corte de la animación: el resultado.\n\n• {b1}\n• {b2}\n• {b3}',
+  'Antes: {prob}.\n\nDespués, con {p}:\n\n• {b1}\n• {b2}\n• {b3}'],
+ ['Antes y después.\n\n{b1}.\n{b2}.\n{b3}.',
+  'Antes: el problema.\nDespués: {p}.\n\nMira el corte completo y compártelo.'],
+ ['Cerramos los cortes de la animación con el resultado de {p}. Los invito a revisarlo y a escribirme si quieren evaluarlo en su operación.',
+  'El antes y el después, en un corte corto. Si les hace sentido, conversemos.'],
+ 'Video corto (20 a 30 s)','Reel de 15 a 20 s','Corte de 20 a 30 s con pantalla dividida antes y después.'),
+cta:A('Llamado a la acción',
+ ['Hablemos de su operación.','{punch3}','¿Lo aplicamos en su faena?','El siguiente paso es una evaluación en terreno.'],
+ ['En las últimas semanas mostramos el problema ({prob}) y cómo se aborda con {p}.\n\nAhora el siguiente paso es suyo: revisar cómo aplicaría en su planta.',
+  'Cada operación es distinta. Por eso, antes de proponer {p}, revisamos su caso en terreno.'],
+ ['Si te sirvió lo que mostramos de {p}, el siguiente paso es ver cómo aplica en tu operación.',
+  '¿Quieres ver {p} aplicado en tu operación?'],
+ ['Si lo que han visto de {p} les hizo sentido, mi invitación es simple: agendemos una evaluación técnica en terreno.',
+  'Después de varias semanas mostrando el problema y la solución, el siguiente paso es hablar de su caso.'],
+ 'Post de texto con imagen','Post con llamado a cotizar','Imagen sencilla con el contacto comercial. Sin animación.'),
+tecnico:A('Técnica: cuándo sí y cuándo no',
+ ['{p}: qué hace y cuándo se justifica.','{p}: cuándo conviene y cuándo no.','Antes de elegir {p}, esto es lo que conviene mirar.','{p}: lo que hay que saber antes de decidir.'],
+ ['x'],['x'],
+ ['Comparto esta publicación técnica de DANK: explica cuándo conviene {p} y cuándo no. Me interesa su opinión desde la operación.',
+  'Para quienes mantienen estos equipos: dejo aquí una guía simple sobre {p}. Cuéntenme si lo ven distinto en su faena.'],
+ 'Carrusel técnico','Carrusel técnico','Carrusel: el problema, cuándo sí, cuándo no y cómo funciona. Una idea por lámina.'),
+cierre:A('Cierre del ciclo',
+ ['Cerramos el ciclo.','Gracias por acompañarnos estas cuatro semanas.','{punch3}','¿Qué quieres ver ahora?'],
+ ['Cerramos el ciclo: el problema ({prob}), la solución y el resultado con {p}.\n\nGracias por los comentarios y mensajes.',
+  'Cuatro semanas, una animación y varios cortes sobre {p}.\n\nGracias a quienes comentaron y escribieron. ¿Qué tema le gustaría que abordemos a continuación?'],
+ ['Resumen del ciclo: el problema, la animación y los beneficios de {p}.\n\n¿Qué te gustaría ver a continuación? Cuéntanos en los comentarios.',
+  'Gracias por acompañarnos estas cuatro semanas.\n\nLo que viste: el problema, la solución y el resultado de {p}.'],
+ ['Terminamos el ciclo de la animación de {p}. Gracias a quienes comentaron y escribieron. Sigo disponible para conversar.',
+  'Gracias a todos los que siguieron esta serie sobre {p}. Cuéntenme qué tema les gustaría ver a continuación.'],
+ 'Imagen resumen','Carrusel resumen','Carrusel resumen: problema, animación, beneficios y contacto.')
+};
+
+/* Estado. ver 2: datos de producto tomados de dankchile.com (páginas de control de polvo y control vibracional). */
+function defaults(){return {
+  ver:10,
+  start:'2026-11-23',
+  contact:{email:'ventas@dankchile.com',phone:'+56 9 4473 8414',web:'https://dankchile.com/',offices:'Casa Matriz: 14 de Febrero 2065, Of. 801 - Antofagasta, Chile\nOficinas Santiago: Av. Américo Vespucio 291, Of. 607-608, Ñuñoa, Chile',offer:'evaluación técnica en terreno',blog:''},
+  products:{
+   airscrape:{name:'Airscrape',
+    problem:'las emisiones de polvo y las fugas de material en los puntos de transferencia de las correas',
+    short:'el polvo y los derrames en las transferencias',
+    solution:'Airscrape, parte del sistema ScrapeTec que DANK representa en Chile, sella los bordes de la correa sin tocar la banda',
+    benefits:'Menos polvo en los puntos de transferencia\nMenos derrame de material y mejor uso del agua\nMenos desgaste de la correa, porque el sello no toca la banda\nInstalación rápida: se instala sin detener la operación',
+    pains:'Limpiezas de derrame que se repiten turno tras turno\nPolvo en el aire que afecta a las personas y a los equipos cercanos\nSellos que rozan la banda y se desgastan junto con ella',
+    signs:'Material acumulado bajo y alrededor de la correa\nPolvo visible en las transferencias y en los chancadores\nSellos laterales que se cambian seguido',
+    parts:'AirScrape: sella los bordes de la correa sin tocar la banda\nTailScrape: sello trasero que trabaja sin tocar directamente la banda\nDustBox: tela filtrante que atrapa el polvo y deja pasar el aire\nSureSupport: recibe el golpe del material y mejora el sello lateral\nPrimeTracker: detecta y corrige cuando la correa se corre hacia un lado',
+    q:'¿Cuántas veces por semana limpian derrames o polvo en sus transferencias?',
+    diff:'Tecnología alemana patentada (ScrapeTec), de la que DANK es representante exclusivo en Chile\nSello sin contacto con la banda: menos desgaste de la correa\nEquipo técnico local que diagnostica, selecciona e instala\nSe instala rápido y sin detener la operación',
+    punch:'El polvo en la transferencia es dinero que se va en limpieza, desgaste y detenciones.\nSelle la correa sin tocar la banda.\nMenos polvo, menos derrames y menos desgaste de la correa.',
+    lema:'Menos polvo. Menos derrames. Más continuidad operacional.',
+    resumen:'Polvo en las transferencias, material bajo la correa y sellos que se cambian seguido terminan en limpiezas constantes, detenciones y mayores costos.',
+    respaldo:'Representantes exclusivos de ScrapeTec en Chile, con equipo técnico local para evaluar, seleccionar e instalar.',
+    cta1:'Anticípate al polvo y a los derrames y protege la continuidad de tu operación.',
+    titulo:'Menos polvo y menos derrames con Airscrape',
+    consec:'Cuando estos problemas se repiten, aumentan las limpiezas, el desgaste de la correa y las intervenciones no planificadas. Identificar la causa a tiempo ayuda a proteger la continuidad operacional.',
+    ayuda:'Airscrape, parte del sistema ScrapeTec, sella los bordes de la correa sin tocar la banda, contribuyendo a reducir el polvo, los derrames y el desgaste.\n\nEn DANK somos representantes exclusivos de esta tecnología en Chile. Acompañamos a tu equipo desde la evaluación del punto de transferencia y la selección de los componentes hasta su instalación.',
+    cierre:'Más limpieza en tus transferencias. Más continuidad para tu operación.',
+    mec:'El sello trabaja sin tocar la banda: no se desgasta junto con ella y deja salir menos polvo y material por los bordes.',
+    cuandono:'Material fino y sin fuga visible en la transferencia: ahí probablemente no se justifica.\nPunto de transferencia sin polvo ni derrame: primero conviene medir.',
+    tiempo:'Se instala rápido y sin detener la operación',
+    oferta:'Plan Transferencia Limpia: visita en terreno, diagnóstico del punto de transferencia y recomendación de los componentes ScrapeTec que corresponden',
+    bonos:'Instalación a cargo del equipo técnico de DANK\nSoporte técnico local después de la instalación\nRevisión de otros puntos de la correa en la misma visita',
+    prueba:'',
+    tags:'#Airscrape #ScrapeTec #ControlDePolvo #CorreasTransportadoras #Minería'},
+   rosta:{name:'Rosta',
+    problem:'las correas que patinan y se re-tensan a mano, y los resortes de acero que se fatigan y se cortan en harneros y alimentadores',
+    short:'el re-tensado de correas y los resortes que se cortan',
+    solution:'Las bases de motor y los soportes oscilantes ROSTA mantienen la tensión de la correa y absorben la vibración por usted. DANK es su representante oficial en Chile y se encarga de diagnosticar, seleccionar e instalar',
+    benefits:'Tensión automática de correas: reduce el re-tensado manual y las intervenciones de mantenimiento\nMayor vida útil: hasta 3 veces más duración de las correas, según el fabricante y las condiciones de aplicación\nMenor mantenimiento: elementos elastoméricos que no requieren lubricación ni mantenimiento periódico\nMás confiabilidad: contribuyen a reducir el desgaste y el riesgo de detenciones no planificadas',
+    pains:'Re-tensado a mano de las correas, semana tras semana\nResortes de acero que se fatigan y se cortan sin aviso\nDetenciones no planificadas en harneros y alimentadores',
+    signs:'Correas que patinan o se calientan\nResortes con fatiga o cortados en harneros y alimentadores\nVibraciones excesivas durante el arranque y la detención de los equipos',
+    parts:'Bases de motor ROSTA MB (MB 27 a MB 100): mantienen la correa tensa de forma automática, sin mantención\nSoportes oscilantes ROSTA (AU, AR, AB, HS): goma en torsión que amortigua sola, para harneros y alimentadores\nAislador: absorbe la vibración, sin lubricación\nTensor: tensión constante, sin piezas móviles por dentro\nSuspensor: reduce golpes y vibraciones\nRosta digital: sensores para detectar fallas a tiempo',
+    q:'¿Cada cuánto re-tensan las correas en su operación?',
+    diff:'Representación oficial de ROSTA en Chile, con stock local y soporte técnico especializado\nTecnología basada en elementos elastoméricos, sin lubricación ni mantenimiento periódico\nEquipo técnico local para evaluar cada aplicación, seleccionar e instalar la solución adecuada',
+    punch:'Cada re-tensado manual es tiempo de mantención que su operación no recupera.\nUn resorte que se corta sin aviso es una detención que no estaba en el plan.\nMenos intervención, más disponibilidad: ROSTA mantiene la tensión y absorbe la vibración por usted.',
+    lema:'Menos detenciones. Más continuidad operacional.',
+    resumen:'Correas que patinan, resortes fatigados y vibraciones excesivas terminan en fallas, detenciones no planificadas y mayores costos.',
+    respaldo:'Representantes oficiales de ROSTA en Chile, con stock local y equipo técnico para evaluar, seleccionar e instalar.',
+    cta1:'Anticípate a las fallas y protege la continuidad de tu operación.',
+    titulo:'Continuidad operacional y confiabilidad con ROSTA',
+    consec:'Cuando estos problemas se repiten, pueden afectar la disponibilidad de los equipos, acelerar el desgaste de sus componentes y generar intervenciones no planificadas. Identificar la causa a tiempo es clave para proteger la continuidad operacional.',
+    ayuda:'Las bases de motor y los soportes oscilantes ROSTA están diseñados para mantener la tensión de las correas y absorber vibraciones, contribuyendo a reducir el desgaste, las intervenciones y las necesidades de mantenimiento.\n\nEn DANK somos representantes oficiales de ROSTA en Chile. Acompañamos a tu equipo desde la evaluación de la aplicación y la selección de los componentes hasta su instalación y puesta en marcha.',
+    cierre:'Más confiabilidad para tus equipos. Más continuidad para tu operación.',
+    mec:'Una goma que trabaja en torsión hace de resorte: mantiene la correa tensa sola y absorbe la vibración, sin lubricación ni piezas que se gasten por dentro.',
+    cuandono:'Equipos pequeños que no se re-tensan ni vibran en exceso: probablemente no se justifica.\nSi el problema es de alineación o de poleas, primero hay que corregir eso.',
+    tiempo:'Cambio de correas rápido, sin re-alinear las poleas',
+    oferta:'Plan Menos Intervención: visita en terreno, diagnóstico de sus bases de motor y soportes, y selección del modelo que corresponde',
+    bonos:'Soporte técnico especializado en terreno\nCapacitación para su equipo\nStock local y tiempos de entrega optimizados',
+    prueba:'',
+    tags:'#ROSTA #MineríaChile #Mantenimiento #Confiabilidad #Antofagasta'}
+  },
+  gs:{urgencia:'',cupos:'',garantia:'',esfuerzo:'Nosotros hacemos el diagnóstico, la selección y la instalación. Su equipo no parte de cero.'},
+  kpi:{},
+  plan:2,
+  fechas:{},fx:[],
+  weeks:8,
+  metas:{},
+  slots:{}
+};}
+let S=defaults(), activeWeek=1, remotePending=null, tipoFilter='', fpage=1;
+const sd=id=>{const x=ALL_FULL.find(y=>y.id===id);const r=Object.assign({tipo:tipoDef(x),prod:x.def,aud:x.defAud,status:'noiniciada',v:0},S.slots[id]||{});if(LEGACY[r.status])r.status=LEGACY[r.status];if(!STATUS[r.status])r.status='noiniciada';if(ANGLES[x.a]&&ANGLES[x.a].topic&&!ANGLES[x.a].topic.flex)r.prod=ANGLES[x.a].topic.prod;return r;};
+function ens(id){return S.slots[id]||(S.slots[id]={});}
+
+/* Fechas */
+const parse=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const iso=d=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const addDays=(d,n)=>{const r=new Date(d);r.setDate(r.getDate()+n);return r;};
+const mondayOf=d=>{const r=new Date(d);const w=(r.getDay()+6)%7;r.setDate(r.getDate()-w);return r;};
+const fmtDate=d=>d.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'short'});
+const fmtShort=d=>d.toLocaleDateString('es-CL',{day:'numeric',month:'short'});
+function slotOffset(sl){return (sl.w-1)*7+sl.d;}
+function slotDate(sl){return addDays(parse(S.start),slotOffset(sl));}
+const todayISO=()=>iso(new Date());
+
+/* Generación de texto */
+function lines(s){return String(s||'').split('\n').map(x=>x.trim()).filter(Boolean);}
+function prodVars(key){
+  const keys=key==='ambos'?['airscrape','rosta']:[key];
+  const items=keys.map(k=>S.products[k]);
+  const both=items.length>1;
+  const pick=(f,n)=>{const ls=items.map(i=>lines(i[f]));const out=[];for(let i=0;i<n;i++)for(const l of ls){if(l[i]&&out.length<n)out.push(l[i]);}return out;};
+  const b=pick('benefits',3);
+  const prob=both?items.map(i=>i.short||i.problem).join(' y '):items[0].problem;
+  const tl=items.map(i=>i.tags.split(/\s+/).filter(Boolean));const tagList=[];for(let i=0;i<10;i++)for(const l of tl){if(l[i]&&!tagList.includes(l[i]))tagList.push(l[i]);}
+  const tags=tagList.concat(['#DankChile']);
+  return {p:items.map(i=>i.name).join(' y '),prob,Prob:prob.charAt(0).toUpperCase()+prob.slice(1),sol:items.map(i=>i.solution).join('. '),
+    b1:b[0]||'',b2:b[1]||'',b3:b[2]||'',
+    pains:pick('pains',both?4:3).map(x=>'• '+x).join('\n'),
+    signs:pick('signs',both?4:3).map((x,i)=>(i+1)+'. '+x).join('\n'),
+    parts:pick('parts',both?4:6).map(x=>'• '+x).join('\n'),
+    q:items.map(i=>i.q).filter(Boolean).join('\n'),
+    diff:pick('diff',both?4:3).map(x=>'• '+x).join('\n'),bens4:pick('benefits',4).map(x=>'• '+x).join('\n'),lema:both?'Menos detenciones. Menos derrames. Más continuidad operacional.':(items[0].lema||''),resumen:both?'Correas que patinan, resortes fatigados, polvo y derrames terminan en fallas, detenciones no planificadas y mayores costos.':(items[0].resumen||''),respaldo:both?'Representantes oficiales de ROSTA y ScrapeTec (Airscrape) en Chile, con equipo técnico local para evaluar, seleccionar e instalar.':lines(items[0].respaldo).join(' '),cta1:both?S.products.rosta.cta1:(items[0].cta1||''),titulo:both?'Continuidad operacional y confiabilidad con '+items.map(i=>i.name).join(' y '):(items[0].titulo||''),consec:both?S.products.rosta.consec:(items[0].consec||''),ayuda:items.map(i=>i.ayuda).filter(Boolean).join('\n\n'),cierre:both?S.products.rosta.cierre:(items[0].cierre||''),mec:items.map(i=>i.mec).filter(Boolean).join(' '),cuandono:items.map(i=>lines(i.cuandono)).flat().map(x=>'• '+x).join('\n'),bens:b.map(x=>'• '+x).join('\n'),tiempo:pick('tiempo',2).map(x=>both?'• '+x:x).join('\n'),oferta:items.map(i=>i.oferta).filter(Boolean).map(x=>both?'• '+x:x).join('\n'),bonos:pick('bonos',both?4:3).map(x=>'• '+x).join('\n'),prueba:items.map(i=>i.prueba).filter(Boolean).join(' '),punch1:pick('punch',3)[0]||'',punch2:pick('punch',3)[1]||'',punch3:pick('punch',3)[2]||'',tagList,tags};
+}
+const fill=(t,v)=>t.replace(/\{(\w+)\}/g,(m,k)=>v[k]!==undefined?v[k]:m);
+/* Plan estratégico B2B: series por tema */
+function TP(tipo,prod,o){
+  const a=A(tipo+': '+o.label,[o.head],['x'],['x'],
+   ['Comparto esta publicación de DANK sobre un tema que aparece seguido en terreno: '+o.label.toLowerCase()+'. Me interesa saber cómo lo viven en sus operaciones.',
+    'Para quienes trabajan en mantención y operaciones: dejo esta publicación de DANK sobre '+o.label.toLowerCase()+'. Cuéntenme si lo ven distinto en su faena.'],
+   'Imagen o carrusel','Carrusel de 3 a 5 láminas',o.vis||'Una lámina por idea. Foto real de terreno si se tiene; si no, ilustración simple del equipo.');
+  a.topic=Object.assign({tipo,prod},o);return a;}
+Object.assign(ANGLES,{
+ t_integrador:TP('Confianza','ambos',{flex:true,label:'DANK integrador de tecnologías',
+  head:'Del diagnóstico en terreno a la puesta en marcha, acompañamos a tu operación.',
+  res:'En DANK integramos tecnologías especializadas para dos frentes de tu operación: vibraciones y suspensión de equipos (ROSTA) y control de polvo en correas transportadoras (Airscrape).',
+  hdr:'Cómo trabajamos:',ben:['Evaluación en terreno de tu aplicación','Selección de la solución que corresponde','Instalación a cargo de nuestro equipo técnico local'],
+  tags:'#DankChile #ROSTA #Airscrape #Minería #Confiabilidad',vis:'Lámina con los dos logos (ROSTA y Airscrape) y una línea por frente. Fondo azul y naranja corporativos.'}),
+ t_harnero:TP('Técnico','rosta',{label:'Suspensión en harneros y alimentadores',
+  head:'¿Qué pasa con un harnero cuando su suspensión no es la adecuada?',
+  res:'Los harneros y alimentadores trabajan vibrando todo el día. Si la suspensión no responde bien, los resortes de acero se fatigan, se cortan y el equipo se detiene sin aviso.',
+  sol:'Los soportes oscilantes ROSTA usan goma en torsión que amortigua sola, sin lubricación.',
+  hdr:'Lo que se busca evitar:',ben:['Resortes de acero fatigados o cortados','Vibración que pasa a la estructura','Detenciones no planificadas del equipo'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad #Vibraciones',vis:'Foto o esquema de un harnero con el soporte oscilante marcado. Una flecha al punto donde se corta el resorte.'}),
+ t_soportes:TP('Técnico','rosta',{label:'Soportes oscilantes: cuándo sí y cuándo no',
+  head:'Soportes oscilantes ROSTA: cuándo se justifican y cuándo no.',
+  res:'No todos los equipos necesitan el mismo soporte. Antes de elegir, conviene mirar el tipo de equipo y la falla que se repite.',
+  sol:'Hay modelos AU, AR, AB y HS, según la aplicación.',
+  hdr:'Conviene evaluarlos si:',ben:['Hay resortes de acero fatigados o cortados','El equipo es un harnero o alimentador con vibración fuerte','Se repiten las detenciones sin aviso'],
+  no:'el problema es de alineación u otro componente. Ahí primero hay que corregir eso.',
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad',vis:'Carrusel: lámina 1 problema, lámina 2 cuándo sí, lámina 3 cuándo no, lámina 4 contacto.'}),
+ t_basemb:TP('Técnico','rosta',{label:'Re-tensado de correas y bases de motor',
+  head:'¿Cada cuánto re-tensas las correas de tus equipos?',
+  res:'Una correa que patina se calienta, se desgasta y obliga a re-tensar a mano. Es una intervención que se repite semana tras semana.',
+  sol:'Las bases de motor ROSTA MB mantienen la tensión de forma automática, sin mantención.',
+  hdr:'Lo que se logra:',ben:['Tensión automática de las correas','Menos re-tensado manual','Hasta 3 veces más vida útil de las correas, según el fabricante y las condiciones de aplicación'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad',vis:'Foto de una base de motor MB instalada, o ilustración de una correa que patina.'}),
+ t_basemb2:TP('Soluciones','rosta',{label:'Base de motor ROSTA MB',
+  head:'Base de motor ROSTA MB: tensión automática, sin mantención.',
+  res:'La serie MB (de MB 27 a MB 100) se elige según el motor y la aplicación.',
+  hdr:'Lo que aporta:',ben:['Sin lubricación ni mantenimiento periódico','Cambio de correas rápido, sin re-alinear las poleas','Se desgasta de a poco, así se puede planificar el cambio'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad',vis:'Foto del producto o de una instalación real. Si no hay foto, ficha con las medidas MB 27 a MB 100.'}),
+ t_tensor:TP('Técnico','rosta',{label:'Tensores ROSTA',
+  head:'Tensores ROSTA: cómo mantienen la correa tensa sin piezas móviles por dentro.',
+  res:'Un tensor de goma mantiene una tensión constante y absorbe los impactos, sin lubricación.',
+  hdr:'Lo que se logra:',ben:['Tensión constante de la correa','Menos impactos y menos desgaste','Menos detenciones no programadas'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad',vis:'Esquema simple del tensor con la goma en torsión. Un solo mensaje por lámina.'}),
+ t_aislador:TP('Soluciones','rosta',{label:'Aisladores y suspensores ROSTA',
+  head:'Aisladores y suspensores ROSTA: menos vibración y menos golpes.',
+  res:'El aislador absorbe la vibración sin lubricación. El suspensor reduce los golpes y las vibraciones en el equipo.',
+  hdr:'Lo que aportan:',ben:['Menos vibración en el equipo y su entorno','Menos golpes sobre los componentes','Sin lubricación ni mantenimiento periódico'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Vibraciones',vis:'Foto de un aislador o suspensor instalado, con una etiqueta de dónde va.'}),
+ t_revisar:TP('Técnico','rosta',{label:'Qué revisar si un equipo vibra raro',
+  head:'Si un equipo vibra raro, esto es lo primero que conviene revisar.',
+  res:'Muchas veces los primeros indicios están a la vista. No necesitas instrumentos para detectarlos.',
+  sol:'Con una evaluación en terreno se identifica la causa antes de que haya una detención.',
+  hdr:'Revisa:',ben:['Correas que patinan o se calientan','Resortes con fatiga o cortados','Vibración fuerte al arrancar y al detenerse'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad #Vibraciones',vis:'Carrusel de checklist: una señal por lámina y una lámina final de contacto.'}),
+ t_digital:TP('Soluciones','rosta',{label:'Rosta digital',
+  head:'Rosta digital: detectar la falla antes de que se detenga el equipo.',
+  res:'Los sensores de Rosta digital ayudan a detectar fallas a tiempo y a planificar el mantenimiento.',
+  hdr:'Lo que aporta:',ben:['Detección de fallas a tiempo','Mantenimiento planificado, no de emergencia','Más información sobre el estado de tus soportes'],
+  tags:'#ROSTA #MantenimientoIndustrial #Minería #Confiabilidad',vis:'Imagen del sensor o ilustración de un soporte con sensor. Verificar los datos técnicos antes de publicar.'}),
+ t_polvo:TP('Confianza','airscrape',{label:'DANK también trabaja el polvo',
+  head:'DANK también trabaja el polvo en tus correas transportadoras.',
+  res:'Además de ROSTA, somos representantes exclusivos de ScrapeTec (Airscrape) en Chile. El polvo y los derrames en las transferencias cuestan limpieza, desgaste y detenciones.',
+  hdr:'Lo que se logra:',ben:['Menos polvo en los puntos de transferencia','Menos derrame de material','Sello sin contacto con la banda: menos desgaste de la correa'],
+  tags:'#Airscrape #ScrapeTec #ControlDePolvo #CorreasTransportadoras #Minería',vis:'Foto de una transferencia con polvo, o ilustración del sello AirScrape sin contacto con la banda.'}),
+ t_scrapetec:TP('Soluciones','airscrape',{label:'Componentes del sistema ScrapeTec',
+  head:'ScrapeTec: cinco componentes, un solo sistema contra el polvo.',
+  res:'AirScrape, TailScrape, DustBox, SureSupport y PrimeTracker se combinan según el punto de transferencia.',
+  hdr:'Los tres más usados:',ben:['AirScrape: sella los bordes de la correa sin tocar la banda','TailScrape: sello trasero que trabaja sin tocar directamente la banda','DustBox: tela filtrante que atrapa el polvo y deja pasar el aire'],
+  tags:'#Airscrape #ScrapeTec #ControlDePolvo #CorreasTransportadoras',vis:'Carrusel con un componente por lámina y su función en una línea.'}),
+ t_preguntas:TP('Confianza','ambos',{label:'Qué preguntamos en una evaluación en terreno',
+  head:'Antes de elegir una solución, estas son las preguntas que hacemos en terreno.',
+  res:'Una buena recomendación parte de entender la aplicación. Por eso la evaluación en terreno es lo primero.',
+  hdr:'Lo que miramos:',ben:['Qué equipo es y cómo trabaja','Qué falla se repite y cada cuánto','Qué condiciones de aplicación hay'],
+  tags:'#DankChile #Minería #Confiabilidad #MantenimientoIndustrial',vis:'Foto del equipo técnico en terreno, si hay una disponible y con autorización.'}),
+ t_integracion:TP('Soluciones','ambos',{label:'Una correa, dos problemas',
+  head:'Una correa, dos problemas: polvo en la transferencia y tensión en el accionamiento.',
+  res:'En la misma correa conviven el polvo y los derrames de los puntos de transferencia y el re-tensado en el motor. Los abordamos con un solo equipo técnico.',
+  hdr:'Cómo lo abordamos:',ben:['Airscrape: menos polvo y derrame en la transferencia','ROSTA: tensión automática en el accionamiento','Una sola evaluación en terreno para ambos frentes'],
+  tags:'#ROSTA #Airscrape #Minería #CorreasTransportadoras #DankChile',vis:'Ilustración de una correa con dos puntos marcados: transferencia (polvo) y motor (tensión).'}),
+ t_evaluacion:TP('Conversión','ambos',{label:'Evaluación técnica en terreno',
+  head:'¿Tu equipo vibra, tu correa patina o tienes polvo en las transferencias?',
+  res:'Visitamos tu faena, evaluamos la aplicación y te recomendamos la solución adecuada.',
+  hdr:'Qué incluye:',ben:['Revisión en terreno de la aplicación','Selección del modelo o componente que corresponde','Instalación a cargo de nuestro equipo técnico'],
+  tags:'#DankChile #ROSTA #Airscrape #Minería #Confiabilidad',vis:'Imagen simple con el llamado a la acción y los datos de contacto.'})
+});
+
+const SRC={
+ t_integrador:(s)=>{const P=S.products,nm=k=>String(P[k].name||'').replace(/^Rosta$/,'ROSTA'),pr=(s&&s.prod)||'ambos',ks=pr==='ambos'?['rosta','airscrape']:[pr];
+   const FR={rosta:'vibraciones y suspensión de equipos (ROSTA)',airscrape:'control de polvo en correas transportadoras (Airscrape)'};
+   return {res:ks.length>1?'En DANK integramos tecnologías especializadas para dos frentes de tu operación: '+FR.rosta+' y '+FR.airscrape+'.':'En DANK integramos tecnologías especializadas para un frente clave de tu operación: '+FR[ks[0]]+'.',
+     hdr:'Lo que hacemos:',ben:ks.map(k=>nm(k)+': soluciones para '+(P[k].short||P[k].problem)).concat(['Evaluación en terreno, selección e instalación a cargo de nuestro equipo técnico local'])};},
+ t_harnero:()=>({ben:ln('rosta','pains'),sol:pf('rosta','oscilante','Nuestra solución: ')}),
+ t_soportes:()=>({ben:ln('rosta','signs'),sol:pf('rosta','oscilante','Nuestra solución: ')}),
+ t_basemb:()=>({ben:ln('rosta','benefits').slice(0,3),sol:pf('rosta','bases? de motor','Nuestra solución: ')}),
+ t_basemb2:()=>({ben:ln('rosta','benefits').slice(0,3)}),
+ t_tensor:()=>({res:pf('rosta','tensor',''),ben:ln('rosta','benefits').slice(0,3)}),
+ t_aislador:()=>({res:[pf('rosta','aislador',''),pf('rosta','suspensor','')].filter(Boolean).join(' ')}),
+ t_revisar:()=>({ben:ln('rosta','signs')}),
+ t_digital:()=>({res:pf('rosta','digital','')}),
+ t_polvo:()=>({ben:ln('airscrape','benefits')}),
+ t_scrapetec:()=>({ben:ln('airscrape','parts').slice(0,5),hdr:'Los componentes:'}),
+ t_integracion:()=>({ben:['rosta','airscrape'].map(k=>ln(k,'benefits')[0]).filter(Boolean).concat(['Una sola evaluación en terreno para ambos frentes'])})
+};
+const ln=(k,f)=>lines((S.products[k]||{})[f]);
+const pf=(k,kw,pre)=>{const m=ln(k,'parts').find(x=>new RegExp(kw,'i').test(x));return m?pre+m+(/[.!?]$/.test(m)?'':'.'):'';};
+
+
+const ALTS={
+ t_integrador:['Evaluamos, seleccionamos e instalamos la solución adecuada para tus equipos.','Tecnología especializada y acompañamiento técnico para una minería más continua.','Ingeniería y tecnología para la continuidad de tu operación.'],
+ t_harnero:['Suspensión de harneros: lo que se nota cuando falla.','Un harnero que vibra mal se detiene sin aviso. ¿Cómo evitarlo?','Harneros y alimentadores: la suspensión importa más de lo que parece.'],
+ t_soportes:['¿Necesita tu harnero un soporte oscilante? Depende de la falla que se repite.','Antes de elegir un soporte oscilante, conviene mirar esto.','Soportes oscilantes: elegir bien parte por entender la aplicación.'],
+ t_basemb:['Una correa que patina es una intervención que se repite.','Re-tensar a mano, semana tras semana: ¿hay otra forma?','Tensión automática: menos intervención en tus correas.'],
+ t_basemb2:['Una base de motor que mantiene la tensión por ti.','Serie MB: la base de motor adecuada según tu aplicación.','Menos re-tensado, menos intervención: base de motor ROSTA MB.'],
+ t_tensor:['Un tensor de goma que mantiene la tensión sin lubricación.','Tensión constante, sin mantención periódica: así trabaja un tensor ROSTA.','Cómo funciona un tensor ROSTA y cuándo conviene.'],
+ t_aislador:['Menos vibración en tu equipo: aisladores y suspensores ROSTA.','Cuando el equipo vibra y golpea, un aislador puede ayudar.','Aisladores y suspensores: dos formas de cuidar tus equipos.'],
+ t_revisar:['Tres señales que no conviene pasar por alto en tus equipos.','¿Cuántas de estas señales ya tiene tu operación?','Lo primero que se ve cuando un equipo empieza a fallar.'],
+ t_digital:['Anticiparse a la falla: cómo ayuda Rosta digital.','Mantenimiento planificado en vez de mantenimiento de emergencia.','Rosta digital: más información sobre el estado de tus soportes.'],
+ t_polvo:['Polvo y derrames en las transferencias: un costo que se repite.','Menos polvo en tus transferencias, sin tocar la banda.','Además de ROSTA, DANK trabaja el control de polvo con Airscrape.'],
+ t_scrapetec:['Los componentes del sistema ScrapeTec, uno por uno.','Cómo se combina ScrapeTec según tu punto de transferencia.','AirScrape, TailScrape, DustBox, SureSupport y PrimeTracker: qué hace cada uno.'],
+ t_preguntas:['Una buena recomendación parte por entender tu aplicación.','Lo primero que preguntamos cuando visitamos una faena.','Así evaluamos tu aplicación antes de recomendar una solución.'],
+ t_integracion:['En la misma correa, dos frentes: polvo y tensión.','Polvo en la transferencia y re-tensado en el motor: los abordamos juntos.','Un solo equipo técnico para dos problemas de tu correa.'],
+ t_evaluacion:['Agenda una evaluación técnica en terreno.','Visitamos tu faena y te recomendamos la solución adecuada.','Cuéntanos tu problema y lo evaluamos en terreno.']
+};
+function titleList(sl,s){const a=ANGLES[sl.a],v=prodVars(s.prod);
+  if(a.topic)return [a.topic.head].concat(ALTS[sl.a]||[]);
+  if(sl.a==='senales')return [v.titulo,fill(a.hooks[0],v),fill(a.hooks[1],v),fill(a.hooks[3],v)].filter(Boolean);
+  return a.hooks.map(h=>fill(h,v));}
+const genTitle=(sl,s)=>{const l=titleList(sl,s);return l[(s.tv||0)%l.length]||'';};
+function genTopic(sl,s){
+  const a=ANGLES[sl.a],T0=a.topic,li=sl.pl==='li',c=S.contact||{},g=S.gs||{},w=sl.w,v=prodVars(s.prod||T0.prod);
+  let ov={};try{ov=(SRC[sl.a]||(()=>({})))(s,sl)||{};}catch(e){ov={};}
+  const T=Object.assign({},T0);Object.keys(ov).forEach(k=>{const x=ov[k];if(x&&(!Array.isArray(x)||x.length))T[k]=x;});
+  const tg=T.tags.split(/\s+/).filter(Boolean).filter(x=>!(sl.a==='t_integrador'&&((s.prod==='rosta'&&x==='#Airscrape')||(s.prod==='airscrape'&&x==='#ROSTA')))).slice(0,li?4:7).concat(li?['#DankChile']:[]).filter((x,i,r)=>r.indexOf(x)===i).join(' ');
+  const bl=T.ben.map(x=>'• '+x).join('\n');
+  const off=c.offer||'evaluación técnica en terreno',tp=s.tipo||'';
+  const cont=contactLines(c),resp='Respaldo DANK: '+v.respaldo,cta=[v.cta1,'Agenda una '+off+'.'].filter(Boolean).join('\n');
+  const hb=T.hdr+'\n'+bl,o=[];
+  /* Todos los datos de la ficha y del contacto entran en todos los tipos; cambia el orden y el tono */
+  if(!li){o.push(T.res);if(T.sol)o.push(T.sol);o.push(hb);o.push('Agenda una '+off+'. Escríbenos por DM'+(c.email?' o a '+c.email:'')+'.');}
+  else if(tp==='tec'){
+    /* Técnico: explica cómo funciona y cuándo se justifica; cierra con una pregunta al lector */
+    o.push(T.res);if(T.sol)o.push(T.sol);o.push(hb);
+    if(T.no)o.push('No se justifica si: '+T.no);
+    o.push(resp);o.push(cta);o.push(cont);
+  }else if(tp==='con'){
+    /* Experiencia y confianza: parte por el respaldo y muestra cómo trabajamos; sin casos ni cifras inventadas */
+    o.push(resp);o.push(T.res);if(T.sol)o.push(T.sol);o.push(hb);
+    if(!/^(Cómo trabajamos|Lo que hacemos|Qué incluye)/.test(T.hdr))o.push('Cómo trabajamos:\n• Evaluamos tu aplicación en terreno\n• Seleccionamos la solución que corresponde\n• Instalamos con nuestro equipo técnico local');
+    o.push('Conversemos sobre tu operación.');o.push(cta);o.push(cont);
+  }else if(tp==='cnv'){
+    /* Conversión comercial: parte con el llamado y cierra pidiendo agendar */
+    o.push(v.cta1);o.push(T.res);if(T.sol)o.push(T.sol);o.push(hb);o.push(resp);
+    o.push('Contáctanos y agenda una '+off+'.');o.push(cont);
+  }else{
+    /* Soluciones y aplicaciones (y sin tipo elegido): problema, solución y dónde se aplica */
+    o.push(T.res);if(T.sol)o.push(T.sol);o.push(hb);o.push(resp);o.push(cta);o.push(cont);
+  }
+  o.push(tg);return o.filter(Boolean).join('\n\n');
+}
+
+/* LinkedIn no tiene negrita en el texto: se usan letras Unicode en negrita (con tildes como marcas combinadas) */
+function boldU(t){return String(t).normalize('NFD').replace(/[A-Za-z0-9]/g,ch=>{const k=ch.charCodeAt(0);
+  if(k>=65&&k<=90)return String.fromCodePoint(0x1D5D4+k-65);
+  if(k>=97&&k<=122)return String.fromCodePoint(0x1D5EE+k-97);
+  return String.fromCodePoint(0x1D7EC+k-48);});}
+function contactLines(c){c=c||{};const l=[];
+  if(c.email)l.push('Escríbenos: '+c.email);
+  if(c.phone)l.push('Llámanos: '+c.phone);
+  if(c.web)l.push('Visítanos: '+c.web);
+  String(c.offices||'').split('\n').map(x=>x.trim()).filter(Boolean).forEach(x=>l.push(x));
+  if(c.blog)l.push('Detalle técnico: '+c.blog);
+  return l.map(x=>{const i=x.indexOf(':');return '• '+(i>0?boldU(x.slice(0,i+1))+x.slice(i+1):x);}).join('\n');}
+function ctaBlock(sl){
+  const c=S.contact||{},li=sl.pl==='li',off=c.offer||'evaluación técnica en terreno';
+  const l=[];
+  l.push(li?'Escríbenos: '+(c.email||'por mensaje directo'):'Escríbenos por DM'+(c.email?' o a '+c.email:''));
+  if(c.phone)l.push('Llámanos: '+c.phone);
+  if(c.web||c.offices)l.push('Visítanos: '+[c.web,c.offices?(li?'oficinas en ':'oficinas en ')+c.offices:''].filter(Boolean).join(' · '));
+  return 'Contáctanos y agenda una '+off+'.\n\n'+l.join('\n');
+}
+function genMain(sl,s){
+  const a=ANGLES[sl.a],v=prodVars(s.prod),n=s.v||0,li=sl.pl==='li',w=sl.w,g=S.gs||{};
+  const hook=fill(a.hooks[n%a.hooks.length],v);
+  if(a.topic)return genTopic(sl,s);
+  if(sl.a==='senales'&&li){const tg=v.tagList.slice(0,4).concat(['#DankChile']).join(' ');
+    const sg=v.signs.split('\n').map(x=>x.replace(/\.$/,'')+'.').join('\n'),nn=sg.split('\n').length,W=['','Una','Dos','Tres','Cuatro','Cinco'][nn]||nn;
+    const c=S.contact||{},ct=contactLines(c);
+    const o=['Si reconoces alguna de estas señales, tu operación podría estar perdiendo continuidad y asumiendo costos evitables. No necesitas instrumentos: basta con observar tus equipos.',
+      W+' señales que no deberías pasar por alto:\n'+sg,v.ayuda.split('\n\n')[0],'Respaldo DANK: '+v.respaldo,[v.cta1,'Agenda una '+(c.offer||'evaluación técnica en terreno')+'.'].filter(Boolean).join('\n'),ct,tg].filter(Boolean);
+    return o.join('\n\n');}
+  if(li&&sl.a!=='tecnico'&&sl.a!=='senales'){const c=S.contact||{},tg=v.tagList.slice(0,4).concat(['#DankChile']).join(' ');
+    const head=(['beneficios','cta','corteres','cortebenef','cierre','lanzamiento'].indexOf(sl.a)>=0&&v.lema)?v.lema:hook;
+    const ex=[g.urgencia,g.cupos].filter(Boolean).join(' ');
+    const ct=contactLines(c);
+    const o=[head,v.resumen,'Las soluciones '+v.p.replace(/Rosta/g,'ROSTA')+' ayudan a prevenir estos problemas:\n'+v.bens,'Respaldo DANK: '+v.respaldo,
+      (w>=3&&ex?ex:''),(w>=3&&g.garantia?'Garantía: '+g.garantia:''),
+      [v.cta1,'Agenda una '+(c.offer||'evaluación técnica en terreno')+'.'].filter(Boolean).join('\n'),ct,tg].filter(Boolean);
+    return o.join('\n\n');}
+  if(sl.a==='tecnico'){const c=S.contact||{},tg=v.tagList.slice(0,li?4:7).concat(['#DankChile']).join(' ');const o=[];
+    o.push('Cuándo sí:\n'+v.signs.replace(/^\d+\.\s*/gm,'• '));
+    if(v.cuandono)o.push('Cuándo no:\n'+v.cuandono);
+    if(v.mec)o.push('Cómo funciona: '+v.mec);
+    o.push('Respaldo DANK: '+v.respaldo);
+    o.push([v.cta1,'Agenda una '+(c.offer||'evaluación técnica en terreno')+'.'].filter(Boolean).join('\n'));o.push(contactLines(c));o.push(tg);return o.join('\n\n');}
+  const bodies=li?a.li:a.ig,raw=bodies[n%bodies.length];
+  const hasProb=/\{(prob|Prob|pains|signs)\}/.test(raw),hasSol=/\{(sol|parts)\}/.test(raw),hasBen=/\{b1\}/.test(raw);
+  const lim=t=>t.split('\n').slice(0,li?9:2).join('\n');
+  const lead=(AUD[s.aud]||AUD.general)[1];
+  const tl=v.tagList.slice(0,li?4:7).concat(['#DankChile']).join(' ');
+  const out=[hook];
+  if(lead)out.push(lead);
+  if(!hasProb)out.push('El problema: '+v.prob+'.');
+  out.push(fill(raw,v).trim());
+  if(!hasSol)out.push('Cómo lo resolvemos:\n'+v.sol+'.');
+  if(!hasBen)out.push('Lo que logra con esta solución:\n'+lim(v.bens));
+  out.push('Lo que nos diferencia:\n'+lim(v.diff)+(v.prueba?'\n\nRespaldo: '+v.prueba:''));
+  if(li&&w>=2){out.push('Rápido y sin esfuerzo de su parte:\n'+v.tiempo.split('\n').map(x=>'• '+x.replace(/^•\s*/,'')).concat(g.esfuerzo?['• '+g.esfuerzo.replace(/^•\s*/,'')]:[]).join('\n'));}
+  if(w>=2&&v.oferta)out.push((li?'Nuestra oferta:\n':'Nuestra oferta: ')+(li?v.oferta:v.oferta.replace(/^•\s*/gm,'').split('\n').join(' · ')));
+  if(li&&w>=3&&v.bonos)out.push('Y además se suma:\n'+v.bonos);
+  if(w>=3){const e=[g.urgencia,g.cupos].filter(Boolean).join(' ');if(e)out.push(e);if(g.garantia)out.push('Garantía: '+g.garantia);}
+  out.push(ctaBlock(sl));
+  out.push(tl);
+  return out.join('\n\n');
+}
+function genCco(sl,s){const a=ANGLES[sl.a],c=S.contact||{};return fill(a.cco[(s.v||0)%a.cco.length],prodVars(s.prod))+'\n\nContáctanos: '+[c.email,c.phone,c.web].filter(Boolean).join(' · ');}
+const mainText=(sl,s)=>s.text!==undefined?s.text:genMain(sl,s);
+const titleText=(sl,s)=>s.title!==undefined?s.title:genTitle(sl,s);
+const postText=(sl,s)=>{const t=titleText(sl,s);return (t?t+'\n\n':'')+mainText(sl,s);};
+const ccoText=(sl,s)=>s.cco!==undefined?s.cco:genCco(sl,s);
+
+/* Persistencia: servidor (Supabase) a través de /api/state */
+let serverVersion=0,timer=null,saving=false,pendingSave=false,PDFS={},UP={},pdfSig='';
+function setSync(t){const e=document.getElementById('sync');if(e)e.textContent=t;}
+const horaAhora=()=>new Date().toLocaleTimeString('es-CL',{hour:'2-digit',minute:'2-digit'});
+function save(){
+  clearTimeout(timer);setSync('Guardando…');
+  timer=setTimeout(()=>{timer=null;doSave();},600);
+}
+async function doSave(){
+  if(saving){pendingSave=true;return;}
+  saving=true;
+  try{
+    const snap=JSON.parse(JSON.stringify(S));
+    const r=await fetch('/api/state',{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({data:snap,baseVersion:serverVersion})});
+    if(r.status===401){location.href='/login';return;}
+    const j=await r.json().catch(()=>({}));
+    if(r.ok){serverVersion=j.version;setSync('Guardado '+horaAhora()+'.');}
+    else if(r.status===409&&j.current){
+      serverVersion=j.current.version;applyRemote(j.current.data);
+      setSync('Otra persona guardó cambios al mismo tiempo'+(j.current.updated_by_email?' ('+j.current.updated_by_email+')':'')+'. Se cargó la versión más reciente; revisa tu último cambio.');
+    }else setSync('No se pudo guardar'+(j.error?' ('+j.error+')':'')+'. Se reintentará.');
+    if(!r.ok&&r.status!==409)setTimeout(save,5000);
+  }catch(e){setSync('Sin conexión. Se reintentará en unos segundos.');setTimeout(save,5000);}
+  finally{saving=false;if(pendingSave){pendingSave=false;doSave();}}
+}
+async function loadPdfs(){
+  try{
+    const r=await fetch('/api/pdfs',{cache:'no-store'});if(!r.ok)return false;
+    const j=await r.json();const g={};
+    (j.pdfs||[]).forEach(p=>{(g[p.slot_id]=g[p.slot_id]||[]).push(p);});
+    const sig=JSON.stringify(g);if(sig===pdfSig)return false;
+    pdfSig=sig;PDFS=g;return true;
+  }catch(e){return false;}
+}
+async function poll(){
+  if(saving||timer||editing()||document.hidden)return;
+  try{
+    const r=await fetch('/api/state',{cache:'no-store'});
+    if(r.status===401){location.href='/login';return;}
+    if(r.ok){const j=await r.json();if(j.data&&j.version>serverVersion&&!timer&&!saving&&!editing()){serverVersion=j.version;applyRemote(j.data);setSync('Actualizado '+horaAhora()+(j.updated_by_email?' · cambios de '+j.updated_by_email:'')+'.');}}
+    if(await loadPdfs()&&!editing())renderAll();
+  }catch(e){}
+}
+const fmtSize=n=>n?(n>=1048576?(n/1048576).toFixed(1).replace('.',',')+' MB':Math.max(1,Math.round(n/1024))+' KB'):'';
+const fmtDT=t=>{try{return new Date(t).toLocaleDateString('es-CL',{day:'numeric',month:'short'});}catch(e){return '';}};
+function pdfHtml(sl){
+  const list=PDFS[sl.id]||[];
+  return '<div class="pdfbox" id="pdf-'+sl.id+'"><div class="pt">Carrusel en PDF</div>'+
+    (list.length?'<ul class="pdfl">'+list.map(p=>'<li><a href="/api/pdfs/'+p.id+'" target="_blank" rel="noopener">'+E(p.filename)+'</a><span class="hint">'+E([fmtSize(p.size),fmtDT(p.created_at),p.uploaded_by_email].filter(Boolean).join(' · '))+'</span><button class="btn" type="button" data-act="pdfdel" data-pid="'+p.id+'" data-id="'+sl.id+'">Quitar</button></li>').join('')+'</ul>':'<div class="hint">Aún no hay un PDF subido para esta publicación.</div>')+
+    '<div class="actions"><label class="btn filebtn">'+(list.length?'Subir otra versión':'Subir PDF')+'<input type="file" accept="application/pdf,.pdf" hidden data-act="pdfup" data-id="'+sl.id+'"></label><span class="hint" id="pdfmsg-'+sl.id+'">'+E(UP[sl.id]||'')+'</span></div></div>';
+}
+function pdfMsg(id,t){UP[id]=t;const e=document.getElementById('pdfmsg-'+id);if(e)e.textContent=t;}
+async function uploadPdf(id,file){
+  if(!file)return;
+  if(!/\.pdf$/i.test(file.name)&&file.type!=='application/pdf'){pdfMsg(id,'Elige un archivo PDF.');return;}
+  if(file.size>50*1024*1024){pdfMsg(id,'El PDF supera los 50 MB.');return;}
+  try{
+    pdfMsg(id,'Preparando subida…');
+    const r1=await fetch('/api/pdfs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'sign',slot_id:id,filename:file.name,size:file.size})});
+    if(r1.status===401){location.href='/login';return;}
+    const j1=await r1.json();if(!r1.ok)throw new Error(j1.error||'No se pudo preparar la subida');
+    pdfMsg(id,'Subiendo '+file.name+'…');
+    const fd=new FormData();fd.append('cacheControl','3600');fd.append('',file);
+    const r2=await fetch(j1.signedUrl,{method:'PUT',headers:{'x-upsert':'false'},body:fd});
+    if(!r2.ok)throw new Error('Falló la subida del archivo ('+r2.status+')');
+    const r3=await fetch('/api/pdfs',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({action:'confirm',slot_id:id,path:j1.path,filename:file.name,size:file.size})});
+    const j3=await r3.json();if(!r3.ok)throw new Error(j3.error||'No se pudo registrar el PDF');
+    (PDFS[id]=PDFS[id]||[]).unshift(j3.pdf);pdfSig=JSON.stringify(PDFS);
+    UP[id]='';renderAll();
+    const e=document.getElementById('pdfmsg-'+id);if(e)e.textContent='PDF subido.';
+  }catch(e){pdfMsg(id,'No se pudo subir: '+(e&&e.message?e.message:'error')+'.');}
+}
+async function deletePdf(id,pid){
+  if(!confirm('¿Quitar este PDF de la publicación?'))return;
+  try{
+    const r=await fetch('/api/pdfs/'+pid,{method:'DELETE'});
+    if(!r.ok){const j=await r.json().catch(()=>({}));throw new Error(j.error||'error');}
+    PDFS[id]=(PDFS[id]||[]).filter(p=>p.id!==pid);if(!PDFS[id].length)delete PDFS[id];pdfSig=JSON.stringify(PDFS);renderAll();
+  }catch(e){pdfMsg(id,'No se pudo quitar: '+(e&&e.message?e.message:'error')+'.');}
+}
+const clone=o=>JSON.parse(JSON.stringify(o));
+function merge(d){const base=defaults();if(!d)return base;
+  base.start=(d.ver||1)<10?base.start:(d.start||base.start);if(d.metas)base.metas=clone(d.metas);if(d.weeks>=1&&d.weeks<=8)base.weeks=d.weeks;if(d.fechas)base.fechas=clone(d.fechas);if(Array.isArray(d.fx))base.fx=clone(d.fx);base.kpi=clone(d.kpi||{});
+  if(d.contact){Object.assign(base.contact,d.contact);if((d.ver||1)<9){base.contact.web=defaults().contact.web;base.contact.offices=defaults().contact.offices;}}if(d.gs)Object.assign(base.gs,d.gs);
+  if(d.products&&(d.ver||1)>=8)for(const k of Object.keys(base.products))if(d.products[k])Object.assign(base.products[k],d.products[k]);for(const k of Object.keys(base.products))for(const f of Object.keys(base.products[k])){const v=base.products[k][f];if(typeof v==='string')base.products[k][f]=v.split('al partir y al parar').join('al arrancar y al detenerse').split('Paradas no planificadas').join('Detenciones no planificadas').split('desgaste y paradas').join('desgaste y detenciones').split('es una parada que no estaba').join('es una detención que no estaba');}
+  base.slots=d.plan===2?clone(d.slots||{}):{};Object.keys(base.slots).forEach(k=>{const st=base.slots[k]&&base.slots[k].status;if(st&&LEGACY[st])base.slots[k].status=LEGACY[st];});return base;}
+function editing(){const a=document.activeElement;return !!(a&&a.closest&&a.closest('#app')&&/^(TEXTAREA|INPUT|SELECT)$/.test(a.tagName));}
+function applyRemote(d){S=merge(d);renderAll();}
+
+/* Render */
+const E=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function stColor(st){return 'var('+STATUS[st][1]+')';}
+function renderProgress(){
+  const c={noiniciada:0,enproceso:0,publicada:0};
+  ALL.forEach(sl=>c[sd(sl.id).status]++);
+  const tot=ALL.length;
+  const li=ALL.filter(x=>x.pl==='li'),ig=ALL.filter(x=>x.pl==='ig');
+  const pub=a=>a.filter(x=>sd(x.id).status==='publicada').length;
+  document.getElementById('progress').innerHTML=
+   '<div class="eyebrow">Avance · '+c.publicada+' de '+tot+' publicadas</div>'+
+   '<div class="bar" role="img" aria-label="Avance de publicaciones">'+Object.keys(c).filter(k=>c[k]).map(k=>'<i style="width:'+(c[k]/tot*100)+'%;background:'+stColor(k)+'"></i>').join('')+'</div>'+
+   '<div class="legend">'+Object.keys(c).map(k=>'<span><span class="dot" style="background:'+stColor(k)+'"></span>'+STATUS[k][0]+' <b>'+c[k]+'</b></span>').join('')+'</div>'+
+   '<div class="legend"><span>LinkedIn <b>'+pub(li)+'/'+li.length+'</b></span>'+(ig.length?'<span>Instagram <b>'+pub(ig)+'/'+ig.length+'</b></span>':'')+'</div>';
+}
+function renderCal(){
+  const t=todayISO();const dd=[...new Set(ALL.map(x=>x.d))].sort((a,b)=>a-b);let h='<div class="h">Semana</div>'+dd.map(d=>'<div class="h">'+DAYS[d]+'</div>').join('');
+  WEEKS.filter(w=>w.n<=S.weeks).forEach(w=>{
+    h+='<button class="wk'+(w.n===activeWeek?' on':'')+'" data-act="week" data-w="'+w.n+'"><strong>Semana '+w.n+'</strong></button>';
+    for(const i of dd){
+      const dt=addDays(parse(S.start),(w.n-1)*7+i);
+      const here=ALL.filter(sl=>sl.w===w.n&&slotOffset(sl)===(w.n-1)*7+i);
+      h+='<div class="day'+(iso(dt)===t?' today':'')+'"><span class="n">'+fmtShort(dt)+'</span>'+here.map(sl=>{const s=sd(sl.id);
+        return '<button class="chip" data-act="goto" data-id="'+sl.id+'" title="'+E(titleText(sl,s))+'"><span class="pl '+sl.pl+'">'+(sl.pl==='li'?'LI':'IG')+'</span><span class="txw"><b class="pr" style="color:var('+PRODS[s.prod][1]+')">'+E(PRODS[s.prod][0])+'</b><span class="tx">'+E(titleText(sl,s))+'</span></span>'+((PDFS[sl.id]||[]).length?'<span class="pdfb" title="Tiene PDF de carrusel">PDF</span>':'')+'<span class="st" style="background:'+stColor(s.status)+'" title="'+STATUS[s.status][0]+'"></span></button>';}).join('')+'</div>';
+    }
+  });
+  const ce=document.getElementById('cal');ce.style.gridTemplateColumns='160px repeat('+dd.length+',minmax(140px,1fr))';ce.style.minWidth='0';ce.innerHTML=h;
+}
+function renderWeekNav(){
+  const w=WEEKS[activeWeek-1];
+  document.getElementById('weeknav').innerHTML=
+   '<div class="info"><span class="eyebrow">Semana '+w.n+' · '+E(fmtShort(addDays(parse(S.start),(w.n-1)*7)))+' al '+E(fmtShort(addDays(parse(S.start),(w.n-1)*7+6)))+'</span><h2>'+E(w.title)+'</h2><p>'+E(w.desc)+'</p></div>'+
+   '<div class="tabs" role="group" aria-label="Semana">'+WEEKS.map(x=>'<button class="tab" data-act="week" data-w="'+x.n+'" aria-pressed="'+(x.n===activeWeek)+'">Semana '+x.n+'</button>').join('')+'</div>';
+}
+
+const SRCMAP={
+ t_integrador:[['rosta','short','Se usa en el punto «ROSTA: soluciones para…»'],['airscrape','short','Se usa en el punto «Airscrape: soluciones para…»']],
+ t_harnero:[['rosta','pains','Lista «Lo que se busca evitar»'],['rosta','parts','Línea «Nuestra solución» (toma el componente «oscilantes»)']],
+ t_soportes:[['rosta','signs','Lista «Conviene evaluarlos si»'],['rosta','parts','Línea «Nuestra solución» (toma el componente «oscilantes»)']],
+ t_basemb:[['rosta','benefits','Lista «Lo que se logra» (primeras 3 líneas)'],['rosta','parts','Línea «Nuestra solución» (toma el componente «Bases de motor»)']],
+ t_basemb2:[['rosta','benefits','Lista «Lo que aporta» (primeras 3 líneas)']],
+ t_tensor:[['rosta','parts','Párrafo inicial (toma el componente «Tensor»)'],['rosta','benefits','Lista «Lo que se logra» (primeras 3 líneas)']],
+ t_aislador:[['rosta','parts','Párrafo inicial (toma los componentes «Aislador» y «Suspensor»)']],
+ t_revisar:[['rosta','signs','Lista «Revisa»']],
+ t_digital:[['rosta','parts','Párrafo inicial (toma el componente «digital»)']],
+ t_polvo:[['airscrape','benefits','Lista «Lo que se logra»']],
+ t_scrapetec:[['airscrape','parts','Lista «Los componentes» (primeras 5 líneas)']],
+ t_integracion:[['rosta','benefits','Punto «ROSTA» (primera línea)'],['airscrape','benefits','Punto «Airscrape» (primera línea)']],
+ senales:[['*','titulo','Título de la publicación'],['*','signs','Lista de señales'],['*','ayuda','Párrafo «cómo ayudamos» (primer párrafo)']],
+ tecnico:[['*','signs','Lista «Cuándo sí»'],['*','cuandono','Lista «Cuándo no»'],['*','mec','Párrafo «Cómo funciona»']]
+};
+const FLAB={short:'Problema en versión breve',pains:'Consecuencias del problema (una por línea)',signs:'Señales de alerta (una por línea)',parts:'Componentes (uno por línea, «Nombre: función»)',benefits:'Beneficios (uno por línea)',titulo:'Título',ayuda:'Cómo ayudamos',cuandono:'Cuándo NO se justifica (uno por línea; confirma con el equipo técnico)',mec:'Cómo funciona',respaldo:'Respaldo DANK',cta1:'Frase final antes del llamado a la acción'};
+function srcFields(sl,s){
+  const out=[],seen={};const add=(k,f,use)=>{const key=k+'|'+f;if(seen[key]||!S.products[k])return;seen[key]=1;out.push([k,f,use]);};
+  const single=s.prod==='ambos'?'rosta':s.prod;
+  (SRCMAP[sl.a]||[]).filter(x=>!(sl.a==='t_integrador'&&s.prod!=='ambos'&&x[0]!==s.prod)).forEach(x=>{if(x[0]==='*'&&s.prod==='ambos'){if(x[1]==='titulo'||x[1]==='ayuda'||x[1]==='mec'||x[1]==='cuandono')add('rosta',x[1],x[2]);else{add('rosta',x[1],x[2]);add('airscrape',x[1],x[2]);}}else add(x[0]==='*'?s.prod:x[0],x[1],x[2]);});
+  if(s.prod!=='ambos')add(single,'respaldo','Línea «Respaldo DANK»');
+  add(single,'cta1','Frase final, antes de «Agenda una evaluación técnica…»'+(s.prod==='ambos'?' (con «Ambos» se toma de la ficha de ROSTA)':''));
+  return out;
+}
+function srcHtml(sl,s){
+  const fs=srcFields(sl,s);
+  return '<details class="srcd"'+(s.srcClosed?'':' open')+' data-id="'+sl.id+'"><summary>Datos que alimentan este texto</summary><div class="in">'+
+   '<div class="hint">Lo que edites aquí cambia el texto de arriba y se guarda en la ficha del producto: lo verás igual en otras publicaciones que usen el mismo dato. El contacto se edita en «Datos generales».</div>'+
+   fs.map(x=>{const id='sf-'+sl.id+'-'+x[0]+'-'+x[1];return '<div class="field"><label for="'+id+'">'+E(PRODS[x[0]][0])+' · '+E(FLAB[x[1]]||x[1])+'</label><div class="use">'+E(x[2])+'</div><textarea id="'+id+'" data-act="cfg" data-k="'+x[0]+'" data-f="'+x[1]+'">'+E(S.products[x[0]][x[1]]||'')+'</textarea></div>';}).join('')+'</div></details>';
+}
+function refreshTexts(){
+  renderCal();
+  visibleSlots().forEach(sl=>{const s=sd(sl.id);
+    if(s.title===undefined){const ti=document.getElementById('ti-'+sl.id);if(ti){ti.value=genTitle(sl,s);}}
+    if(s.text===undefined){const ta=document.getElementById('tx-'+sl.id);if(ta){ta.value=mainText(sl,s);updCount(sl.id);}}
+    if(s.cco===undefined){const c=document.querySelector('#slot-'+sl.id+' textarea[data-act="cco"]');if(c)c.value=ccoText(sl,s);}});
+}
+function slotHTML(sl){
+  const s=sd(sl.id),p=PLAT[sl.pl],dt=slotDate(sl),a=ANGLES[sl.a];
+  const late=iso(dt)<todayISO()&&s.status!=='publicada';
+  const txt=mainText(sl,s);
+  const manual=s.text!==undefined;
+  const opts=Object.keys(PRODS).map(k=>'<label class="opt" style="--c:var('+PRODS[k][1]+')"><input type="radio" name="prod-'+sl.id+'" value="'+k+'" data-act="prod" data-id="'+sl.id+'"'+(s.prod===k?' checked':'')+'><span><i class="sw" style="background:var('+PRODS[k][1]+')"></i>'+PRODS[k][0]+'</span></label>').join('');
+  const audOpts=Object.keys(AUD).map(k=>'<option value="'+k+'"'+(s.aud===k?' selected':'')+'>'+AUD[k][0]+'</option>').join('');
+  const cl=chkFor(sl),done=cl.filter(c=>(s.chk||{})[c[0]]).length;
+  const chkHtml='<details class="chkl"'+(s.chkOpen?' open':'')+' data-id="'+sl.id+'"><summary>Antes de publicar · '+done+'/'+cl.length+'</summary><div class="in">'+cl.map(c=>'<label class="chk"><input type="checkbox" data-act="chk" data-id="'+sl.id+'" data-k="'+c[0]+'"'+((s.chk||{})[c[0]]?' checked':'')+'> '+E(c[1])+'</label>').join('')+'</div></details>';
+  const cco=sl.pl==='li'?'<details class="cco"'+(s.ccoOpen?' open':'')+' data-id="'+sl.id+'"><summary>Repost personal del CCO'+(s.ccoDone?' · realizado':'')+'</summary><div class="in"><div class="hint">Comentario que acompaña el repost, en primera persona. Se publica el mismo día, después de la página DANK.</div><textarea data-act="cco" data-id="'+sl.id+'" aria-label="Comentario del repost del CCO">'+E(ccoText(sl,s))+'</textarea><div class="actions"><label class="chk"><input type="checkbox" data-act="ccodone" data-id="'+sl.id+'"'+(s.ccoDone?' checked':'')+'> Repost realizado</label><button class="btn" data-act="copycco" data-id="'+sl.id+'">Copiar comentario</button>'+(s.cco!==undefined?'<button class="btn" data-act="resetcco" data-id="'+sl.id+'">Volver al texto generado</button>':'')+'</div></div></details>':'';
+  return '<article class="slot" id="slot-'+sl.id+'">'+
+   '<div class="meta"><div class="date">'+E(fmtDate(dt))+'</div><span class="tagst" style="--c:'+stColor(s.status)+'"><i></i>'+STATUS[s.status][0]+'</span><div class="time">'+p.time+' · hora de Chile</div>'+
+   '<span class="plat '+sl.pl+'">'+p.name+' · '+p.sub+'</span>'+
+   
+   (late?'<div class="late">Fecha vencida sin publicar</div>':'')+
+   '<fieldset class="prod"><legend class="eyebrow" style="margin-bottom:6px">Producto</legend>'+(a.topic&&!a.topic.flex?'<div class="kv"><b>'+E(PRODS[s.prod][0])+'</b></div><div class="hint">Esta publicación es específica de este producto y no se puede cambiar.</div>':opts)+'</fieldset>'+'<fieldset class="prod"><legend class="eyebrow" style="margin-bottom:6px">Tipo de publicación</legend><select data-act="tipo" data-id="'+sl.id+'" aria-label="Tipo de publicación"><option value=""'+(s.tipo?'':' selected')+'>Elegir tipo…</option>'+TIPOS.map(t=>'<option value="'+t[0]+'"'+(s.tipo===t[0]?' selected':'')+'>'+E(t[1])+'</option>').join('')+'</select></fieldset>'+'<fieldset class="stf"><legend class="eyebrow" style="margin-bottom:6px">Etiqueta de estado</legend>'+Object.keys(STATUS).map(k=>'<label class="opt" style="--c:'+stColor(k)+'"><input type="radio" name="st-'+sl.id+'" value="'+k+'" data-act="status" data-id="'+sl.id+'"'+(s.status===k?' checked':'')+'><span><i class="sw" style="background:'+stColor(k)+'"></i>'+STATUS[k][0]+'</span></label>').join('')+'</fieldset></div>'+
+   '<div class="main"><div class="compose"><div class="field"><div class="hd"><label for="ti-'+sl.id+'">Título de la publicación</label><button class="btn" data-act="regentitle" data-id="'+sl.id+'">Generar otra versión</button></div><textarea class="ttl" id="ti-'+sl.id+'" data-act="title" data-id="'+sl.id+'">'+E(titleText(sl,s))+'</textarea></div><div class="field"><div class="hd"><label for="tx-'+sl.id+'">Texto de la publicación</label><span class="hdr"><span class="count" id="ct-'+sl.id+'"></span><button class="btn" data-act="regen" data-id="'+sl.id+'">Generar otra versión</button></span></div>'+
+   '<textarea id="tx-'+sl.id+'" data-act="text" data-id="'+sl.id+'">'+E(txt)+'</textarea>'+
+   '<div class="actions"><button class="btn" data-act="copy" data-id="'+sl.id+'">Copiar título y texto</button></div>'+pdfHtml(sl)+
+   (manual?'<div class="hint">Texto editado a mano. Al cambiar el producto no se reemplaza; usa «Generar otra versión» para volver a generarlo.</div>':'')+'</div>'+
+   '</div>'+srcHtml(sl,s)+'</div></article>';
+}
+function updCount(id){
+  const sl=ALL.find(x=>x.id===id),ta=document.getElementById('tx-'+id),c=document.getElementById('ct-'+id);if(!ta||!c)return;
+  const ti=document.getElementById('ti-'+id),n=ta.value.length+(ti&&ti.value?ti.value.length+2:0),max=PLAT[sl.pl].max;c.textContent=n+' / '+max;c.classList.toggle('over',n>max);
+}
+const PER_PAGE=2;
+function filtered(){return ALL.filter(x=>sd(x.id).tipo===tipoFilter);}
+function visibleSlots(){
+  if(!tipoFilter)return ALL.filter(x=>x.w===activeWeek);
+  const l=filtered(),pages=Math.max(1,Math.ceil(l.length/PER_PAGE));fpage=Math.min(Math.max(1,fpage),pages);
+  return l.slice((fpage-1)*PER_PAGE,fpage*PER_PAGE);
+}
+function pagerHtml(total){const pages=Math.ceil(total/PER_PAGE);if(pages<2)return '';
+  return '<div class="pager" role="navigation" aria-label="Paginación"><button class="btn" data-act="fpage" data-p="'+(fpage-1)+'"'+(fpage<=1?' disabled':'')+'>Anterior</button><span>Página '+fpage+' de '+pages+'</span><button class="btn" data-act="fpage" data-p="'+(fpage+1)+'"'+(fpage>=pages?' disabled':'')+'>Siguiente</button></div>';}
+function renderSlots(){
+  const list=visibleSlots();let head='',foot='';
+  if(tipoFilter){const t=TIPOS.find(x=>x[0]===tipoFilter),tot=filtered().length;
+    head='<div class="fbar"><span>Mostrando publicaciones de tipo <b>'+E(t[1])+'</b> · '+tot+' de '+ALL.length+'</span><button class="btn" data-act="fclear">Quitar filtro</button></div>'+pagerHtml(tot);
+    foot=pagerHtml(tot);
+    if(!tot)head+='<p class="hint">Aún no hay publicaciones de este tipo. Elígelo en el selector «Tipo de publicación» de cada publicación.</p>';}
+  document.getElementById('slots').innerHTML=head+list.map(slotHTML).join('')+foot;
+  list.forEach(sl=>updCount(sl.id));
+}
+function renderSettings(){
+  const el=document.getElementById('settings');const open=el.open;
+  const fld=(pre,act,f,label,val,ta)=>'<div class="field"><label for="'+pre+f+'">'+label+'</label>'+(ta?'<textarea id="'+pre+f+'" data-act="'+act+'" data-f="'+f+'">'+E(val||'')+'</textarea>':'<input type="text" id="'+pre+f+'" data-act="'+act+'" data-f="'+f+'" value="'+E(val||'')+'">')+'</div>';
+  el.innerHTML='<summary>Datos generales: contacto</summary><div class="set-grid">'+
+   '<section><h3>Contacto y llamado a la acción</h3>'+[['offer','Qué ofrecemos agendar'],['email','Correo'],['phone','Teléfono'],['web','Sitio web'],['offices','Oficinas (una por línea)'],['blog','Enlace a artículo técnico o blog (opcional)']].map(f=>fld('cfg-ct-','contact',f[0],f[1],S.contact[f[0]],f[0]==='offices')).join('')+'</section>'+
+   '</div>';
+  el.open=open;
+}
+const kpiVal=(w,f)=>Number((S.kpi[w]||{})[f])||0;
+const kpiTot=f=>[1,2,3,4].reduce((a,w)=>a+kpiVal(w,f),0);
+function renderKpi(){
+  document.getElementById('kpi').innerHTML=
+   '<div><span class="eyebrow">Meta de la campaña</span><h2>10 evaluaciones técnicas en 8 semanas</h2><div class="hint">El éxito se mide por evaluaciones técnicas agendadas. Alcance e interacción solo sirven para diagnosticar. Anota cada semana lo que llegó por DM, formulario, correo o CRM.</div></div>'+
+   '<div class="kpi-sum">'+KPIS.map(k=>'<div class="m"><span class="eyebrow">'+k[1]+'</span><div class="big"><span id="kt-'+k[0]+'">0</span> <small>de '+k[2]+'</small></div><div class="bar"><i id="kb-'+k[0]+'" style="width:0;background:var(--accent)"></i></div></div>').join('')+'</div>'+
+   '<div class="kpi-tbl"><table><thead><tr><th>Semana</th>'+KPIS.map(k=>'<th>'+E(k[1])+'</th>').join('')+'</tr></thead><tbody>'+
+   [1,2,3,4].map(w=>'<tr><td>Semana '+w+'</td>'+KPIS.map(k=>'<td><input type="number" min="0" inputmode="numeric" aria-label="'+E(k[1])+', semana '+w+'" data-act="kpi" data-w="'+w+'" data-f="'+k[0]+'" value="'+kpiVal(w,k[0])+'"></td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+  updKpi();
+}
+function updKpi(){KPIS.forEach(k=>{const t=kpiTot(k[0]);const a=document.getElementById('kt-'+k[0]),b=document.getElementById('kb-'+k[0]);if(a)a.textContent=t;if(b)b.style.width=Math.min(100,t/k[2]*100)+'%';});}
+/* Exportar a Excel */
+const EST_FILL={noiniciada:'FFE6E9EB',enproceso:'FFFBE7B5',publicada:'FFCBEAD6'};
+function slotRows(){
+  return ALL.map(sl=>{const s=sd(sl.id),a=ANGLES[sl.a],dt=slotDate(sl),p=PLAT[sl.pl],cl=chkFor(sl);
+    const txt=postText(sl,s);
+    return {sl,s,dt,row:{w:sl.w,fase:WEEKS[sl.w-1].title,fecha:new Date(Date.UTC(dt.getFullYear(),dt.getMonth(),dt.getDate())),dia:dt.toLocaleDateString('es-CL',{weekday:'long'}),hora:p.time,red:p.name,cuenta:p.sub,prod:PRODS[s.prod][0],tipo:(TIPOS.find(t=>t[0]===s.tipo)||[,''])[1],aud:AUD[s.aud]?AUD[s.aud][0]:'Todas',ang:a.label,fmt:sl.pl==='li'?a.fli:a.fig,vis:a.vis,est:STATUS[s.status][0],txt,n:txt.length,cco:sl.pl==='li'?ccoText(sl,s):'',ccod:sl.pl==='li'?(s.ccoDone?'Sí':'No'):'',chk:cl.filter(c=>(s.chk||{})[c[0]]).length+'/'+cl.length}};
+  }).sort((x,y)=>x.dt-y.dt||(x.sl.pl<y.sl.pl?-1:1));
+}
+async function buildXlsx(){
+  const wb=new ExcelJS.Workbook();wb.creator='DANK';wb.created=new Date();
+  const ws=wb.addWorksheet('Calendario',{views:[{state:'frozen',xSplit:3,ySplit:1}]});
+  const cols=[['Semana','w',9],['Fase','fase',26],['Fecha','fecha',12],['Día','dia',11],['Hora (Chile)','hora',13],['Red','red',11],['Cuenta','cuenta',14],['Producto','prod',12],['Tipo de publicación','tipo',24],['Audiencia','aud',18],['Ángulo','ang',26],['Formato sugerido','fmt',26],['Idea visual','vis',34],['Estado','est',14],['Texto de la publicación','txt',80],['Caracteres','n',11],['Comentario repost CCO','cco',60],['Repost CCO realizado','ccod',14],['Checklist','chk',11]];
+  ws.columns=cols.map(c=>({header:c[0],key:c[1],width:c[2]}));
+  const hr=ws.getRow(1);hr.height=30;
+  hr.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B3D7A'}};c.alignment={vertical:'middle',wrapText:true};});
+  const rows=slotRows();
+  rows.forEach((r,i)=>{
+    const row=ws.addRow(r.row);const lines=r.row.txt.split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/88)),0);
+    const l2=r.row.cco?r.row.cco.split('\n').reduce((a,l)=>a+Math.max(1,Math.ceil(l.length/62)),0):0;
+    row.height=Math.min(409,Math.max(48,15*Math.max(lines,l2)+8));
+    row.eachCell(c=>{c.alignment={vertical:'top',wrapText:true};c.border={bottom:{style:'thin',color:{argb:'FFD9DFDD'}}};});
+    row.getCell('fecha').numFmt='dd-mm-yyyy';
+    const ec=row.getCell('est');ec.fill={type:'pattern',pattern:'solid',fgColor:{argb:EST_FILL[r.s.status]}};ec.font={bold:true};
+    ec.dataValidation={type:'list',allowBlank:false,formulae:['"No iniciada,En proceso,Publicada"']};
+  });
+  ws.autoFilter={from:{row:1,column:1},to:{row:rows.length+1,column:cols.length}};
+  const rs=wb.addWorksheet('Resumen');
+  rs.columns=[{width:38},{width:16},{width:16},{width:16},{width:16}];
+  const hd=(r)=>r.eachCell(c=>{c.font={bold:true,color:{argb:'FFFFFFFF'}};c.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF0B3D7A'}};});
+  rs.addRow(['Calendario de publicaciones · Campaña Airscrape y Rosta']).font={bold:true,size:14};
+  rs.addRow(['Generado el '+new Date().toLocaleDateString('es-CL',{day:'numeric',month:'long',year:'numeric'})+'. Horarios en hora de Chile.']);
+  rs.addRow([]);hd(rs.addRow(['Estado','Publicaciones']));
+  const cnt={noiniciada:0,enproceso:0,publicada:0};rows.forEach(r=>cnt[r.s.status]++);
+  Object.keys(STATUS).forEach(k=>{const r=rs.addRow([STATUS[k][0],cnt[k]]);r.getCell(1).fill={type:'pattern',pattern:'solid',fgColor:{argb:EST_FILL[k]}};});
+  rs.addRow(['Total',rows.length]).font={bold:true};
+  rs.addRow([]);hd(rs.addRow(['Red','Publicaciones','Publicadas']));
+  ['li','ig'].forEach(k=>{const l=rows.filter(r=>r.sl.pl===k);rs.addRow([PLAT[k].name,l.length,l.filter(r=>r.s.status==='publicada').length]);});
+  return wb.xlsx.writeBuffer();
+}
+async function exportExcel(){
+  const btn=document.getElementById('xlsx'),msg=document.getElementById('xlsx-msg');
+  msg.textContent='';
+  if(typeof ExcelJS==='undefined'){msg.textContent='No se pudo cargar el generador de Excel. Recarga la página e inténtalo de nuevo.';return;}
+  btn.disabled=true;
+  try{
+    const buf=await buildXlsx();
+    const blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='Calendario_Campana_DANK_'+todayISO()+'.xlsx';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);
+    msg.textContent='Excel generado con '+ALL.length+' publicaciones.';
+  }catch(e){
+    const c=e&&e.code;
+    msg.textContent=c==='declined'?'Descarga cancelada.':c==='rate_limited'?'Hay una descarga pendiente. Espera un momento e inténtalo otra vez.':'No se pudo generar el Excel'+(c?' ('+c+')':'')+'.';
+  }finally{btn.disabled=false;}
+}
+document.getElementById('xlsx').addEventListener('click',exportExcel);
+
+const metaOf=t=>{const m=S.metas&&S.metas[t[0]];return m===undefined?t[2]:m;};
+function renderMix(){const el=document.getElementById('mix');if(!el)return;
+  const n=ALL.length||1,tot=TIPOS.reduce((a,t)=>a+(Number(metaOf(t))||0),0);
+  el.innerHTML=TIPOS.map(t=>{const l=ALL.filter(x=>sd(x.id).tipo===t[0]),c=l.length,pub=l.filter(x=>sd(x.id).status==='publicada').length,pc=(Math.round(c*1000/n)/10).toString().replace('.',',');
+    return '<div class="panel mixbox'+(tipoFilter===t[0]?' on':'')+'" data-act="filtro" data-k="'+t[0]+'"><button class="mixbtn" type="button" data-act="filtro" data-k="'+t[0]+'" aria-pressed="'+(tipoFilter===t[0])+'">'+E(t[1])+'</button><span class="hint mixdef">'+E(t[3])+'</span><span><b>'+pc+'%</b> del plan · meta <input type="number" min="0" max="100" step="5" class="metain" data-act="meta" data-k="'+t[0]+'" value="'+metaOf(t)+'" aria-label="Meta de '+E(t[1])+' en porcentaje">%</span><div class="bar2"><i style="width:'+Math.min(100,c*100/n)+'%"></i></div><span class="hint">'+c+' de '+ALL.length+' publicaciones · '+pub+' publicadas</span></div>';}).join('')+(ALL.some(x=>!sd(x.id).tipo)?'<div class="hint" style="grid-column:1/-1">'+ALL.filter(x=>!sd(x.id).tipo).length+' de '+ALL.length+' publicaciones aún sin tipo elegido.</div>':'')+(tot!==100?'<div class="hint" style="grid-column:1/-1;color:var(--warm)">Las metas suman '+tot+'%. Deberían sumar 100%.</div>':'');}
+function applyWeeks(){const n=S.weeks||8;ALL.length=0;ALL_FULL.filter(x=>x.w<=n).forEach(x=>ALL.push(x));if(activeWeek>n)activeWeek=n;const el=document.getElementById('cfg-weeks');if(el)el.value=String(n);}
+function renderMain(){applyWeeks();renderProgress();renderMix();renderCal();renderSlots();}
+function renderAll(){renderMain();renderSettings();renderFechas();}
+
+/* Fechas importantes */
+const FECHAS=[
+ {id:'anio',n:'Año Nuevo',m:1,d:1,tag:'#AñoNuevo',v:['Comienza un nuevo año y queremos empezar agradeciéndote.\n\nGracias por la confianza y por el trabajo en conjunto. Cada conversación, cada visita a terreno y cada proyecto nos ayudó a entender mejor lo que necesita tu operación y a mejorar la forma en que te acompañamos.\n\nSabemos que detrás de cada equipo funcionando hay personas que planifican, mantienen y cuidan los detalles todos los días. Ese trabajo es el que hace posible que las operaciones sigan avanzando.\n\nQue este nuevo año traiga metas cumplidas, operaciones continuas, pocas detenciones inesperadas y tiempo para lo que más importa.\n\nEstamos disponibles para acompañarte en lo que viene.\n\nFeliz Año Nuevo.',
+  'Termina un año de mucho trabajo y empieza uno nuevo.\n\nEn DANK queremos saludar a las personas, los equipos y las empresas con las que trabajamos. Gracias por abrir las puertas de tus operaciones, por contarnos lo que necesitas y por confiar en nuestro equipo técnico.\n\nUn nuevo año es una buena ocasión para mirar lo que viene: nuevos desafíos, nuevas metas y también la oportunidad de hacer las cosas mejor. Seguiremos acompañándote con evaluación en terreno, selección de la solución adecuada e instalación a cargo de nuestro equipo.\n\nQue este año tengas buenos resultados, turnos seguros y equipos funcionando como corresponde.\n\nFeliz Año Nuevo.',
+  'Un nuevo año es una buena ocasión para detenerse un momento y agradecer.\n\nDesde DANK te agradecemos por ser parte de nuestro camino. Trabajar con operaciones mineras e industriales nos exige estar cerca de quienes las hacen funcionar, y esa cercanía es lo que más valoramos.\n\nEste año queremos seguir conversando contigo sobre lo que pasa en terreno: las vibraciones, el polvo, las correas que patinan y las detenciones que nadie quiere. Cada problema que nos cuentas es una oportunidad para buscar una mejor solución.\n\nTe deseamos un año de metas cumplidas, de trabajo seguro y de operaciones más continuas.\n\nAquí estamos para acompañarte.\n\nFeliz Año Nuevo.']},
+ {id:'mujer',n:'Día Internacional de la Mujer',m:3,d:8,tag:'#DíaDeLaMujer',v:['Hoy, 8 de marzo, es el Día Internacional de la Mujer.\n\nQueremos reconocer a las mujeres que trabajan en la minería y en la industria: en las faenas, en los talleres, en las oficinas, en la ingeniería, en la operación y en la mantención. Cada una de ellas aporta con su preparación, su esfuerzo y su compromiso.\n\nLa continuidad de una operación depende de muchas personas, y las mujeres son una parte fundamental de ese trabajo todos los días.\n\nSabemos que todavía hay camino por recorrer para que haya más espacios y más oportunidades. Por eso es importante seguir hablando de ello y seguir reconociendo su aporte.\n\nGracias por abrir camino y por inspirar a quienes vienen después.\n\nFeliz Día de la Mujer.',
+  'En el Día Internacional de la Mujer queremos saludar a todas las mujeres que forman parte de la minería y de la industria.\n\nDetrás de cada operación hay mujeres que planifican, operan, supervisan, mantienen y toman decisiones. Su trabajo muchas veces no se ve, pero se nota en cada turno que sale bien y en cada equipo que sigue funcionando.\n\nEn DANK trabajamos con empresas y equipos de la minería y la industria, y sabemos lo importante que es el aporte de cada persona. Por eso hoy queremos reconocer y agradecer a quienes, con su esfuerzo diario, hacen posible que las operaciones avancen.\n\nQue este día sea una buena ocasión para valorar su trabajo, escuchar sus ideas y seguir construyendo una industria donde todas puedan crecer.\n\nFeliz Día de la Mujer.',
+  'Cada operación funciona gracias a las personas que la hacen posible, y muchas de ellas son mujeres.\n\nHoy, Día Internacional de la Mujer, las saludamos y reconocemos su trabajo en la minería y en la industria. Su aporte está en cada área: en terreno, en el taller, en la oficina, en la gestión y en la toma de decisiones.\n\nCuando una operación se mantiene continua, detrás hay muchas horas de planificación, de revisión y de trabajo en equipo. Y en ese trabajo, las mujeres tienen un rol que merece ser reconocido.\n\nQue cada vez haya más espacios para que sigan creciendo, aprendiendo y liderando.\n\nGracias por todo lo que aportan cada día.\n\nFeliz Día de la Mujer.']},
+ {id:'seg',n:'Día Mundial de la Seguridad y Salud en el Trabajo',m:4,d:28,tag:'#SeguridadYSalud',v:['Hoy es el Día Mundial de la Seguridad y Salud en el Trabajo.\n\nCuidarse es lo primero en cada turno. Una operación segura parte por las personas que la hacen posible y por las decisiones que se toman antes de empezar el trabajo.\n\nRevisar los equipos, respetar los procedimientos y avisar a tiempo cuando algo no está bien también es cuidar a tu equipo. Muchas veces los primeros indicios están a la vista: ruidos distintos, vibraciones fuertes o piezas que no funcionan como siempre.\n\nNo esperes a que el problema crezca. Conversar con tu equipo, informar lo que ves y pedir apoyo es parte de trabajar bien.\n\nEn DANK nos sumamos a este día y te invitamos a hacer de la seguridad un hábito en cada turno.\n\nCuídate y cuida a los tuyos.',
+  'Todo trabajo debería terminar con las personas de vuelta en casa, sanas y salvas.\n\nHoy, en el Día Mundial de la Seguridad y Salud en el Trabajo, recordamos que cuidar a las personas es parte de cada tarea, desde la planificación hasta la última revisión del equipo.\n\nEn minería e industria se trabaja con equipos pesados, en condiciones exigentes y con turnos largos. Por eso es importante tomarse el tiempo para revisar, preguntar y respetar cada paso del procedimiento, aunque haya apuro.\n\nUna operación continua también es una operación mejor cuidada, donde se detectan a tiempo las señales y se actúa con calma.\n\nTe invitamos a conversar hoy con tu equipo sobre cómo cuidarse mejor en cada turno.\n\nGracias por trabajar con responsabilidad.',
+  'La seguridad no es un trámite: se vive todos los días en terreno.\n\nEn el Día Mundial de la Seguridad y Salud en el Trabajo queremos reconocer a quienes cuidan a sus compañeros, respetan cada procedimiento y se atreven a detener una tarea cuando algo no está bien.\n\nDetenerse a tiempo puede evitar un accidente. Hacer una pregunta puede evitar un error. Y avisar de una falla puede evitar un problema mayor.\n\nEn DANK acompañamos a operaciones mineras e industriales, y sabemos que detrás de cada equipo hay personas que merecen volver a casa bien, todos los días.\n\nQue cada turno termine bien.\n\nGracias por trabajar con responsabilidad y por cuidar a tu equipo.']},
+ {id:'trab',n:'Día del Trabajo',m:5,d:1,tag:'#DíaDelTrabajo',v:['Hoy, Día del Trabajo, saludamos a quienes trabajan cada día en la minería y en la industria.\n\nDetrás de cada operación hay personas que planifican, mantienen, operan y cuidan los equipos, en cada turno y en cada condición. Son técnicos, operadores, mantenedores, supervisores, ingenieros y equipos de apoyo que trabajan en conjunto para que todo siga funcionando.\n\nSu esfuerzo no siempre se ve, pero se nota en cada resultado, en cada meta cumplida y en cada equipo que vuelve a funcionar a tiempo.\n\nEn DANK valoramos ese trabajo y lo vemos de cerca cada vez que visitamos una operación.\n\nGracias por el esfuerzo y el compromiso de cada día.\n\nFeliz Día del Trabajo.',
+  'El 1 de mayo es el Día del Trabajo.\n\nQueremos reconocer a todas las personas que hacen posible que las operaciones sigan funcionando. Hay quienes trabajan en terreno, bajo condiciones exigentes, y quienes apoyan desde la oficina con planificación, compras, logística y administración. Todos son parte de la misma cadena.\n\nEn la industria, un buen resultado nunca es obra de una sola persona. Es fruto del trabajo en equipo, de la experiencia acumulada y de la atención a los detalles.\n\nDesde DANK saludamos a los equipos con los que trabajamos y agradecemos la confianza que nos entregan.\n\nQue hoy tengas un buen día de descanso o un turno tranquilo, si te toca trabajar.\n\nFeliz Día del Trabajo.',
+  'Hoy celebramos el trabajo y a quienes lo hacen todos los días.\n\nEn DANK sabemos que una operación continua depende de personas comprometidas, que trabajan en equipo y se ocupan de los detalles. Esa dedicación es la que mantiene los equipos funcionando y las metas al alcance.\n\nTambién sabemos que muchos trabajan hoy en turno, mientras otros descansan. A todos ellos, gracias por mantener las operaciones en marcha.\n\nEs un orgullo acompañar a las personas y a las empresas de esta industria con soluciones que contribuyen a que el trabajo sea más continuo.\n\nGracias por ser parte de la minería y de la industria.\n\nFeliz Día del Trabajo.']},
+ {id:'amb',n:'Día Mundial del Medio Ambiente',m:6,d:5,tag:'#MedioAmbiente',v:['Hoy es el Día Mundial del Medio Ambiente.\n\nCuidar el entorno también es parte de la operación. En una correa transportadora, el polvo y los derrames en los puntos de transferencia significan limpieza constante, desgaste de los equipos y más exposición para quienes trabajan cerca.\n\nControlar el polvo ayuda a mantener limpias las áreas de trabajo, a cuidar a las personas y a reducir el impacto en el entorno.\n\nEn DANK somos representantes exclusivos de ScrapeTec en Chile, con el sistema Airscrape, que contribuye a reducir el polvo y los derrames.\n\nSi quieres revisar cómo está tu operación, nuestro equipo técnico puede hacer una evaluación en terreno.\n\nCuidemos el entorno, todos los días.',
+  'En el Día Mundial del Medio Ambiente queremos hacer una pregunta: ¿cómo está el polvo en los puntos de transferencia de tus correas transportadoras?\n\nEl polvo y los derrames no solo cuestan limpieza, desgaste y detenciones. También afectan el entorno y a las personas que trabajan cerca de la correa.\n\nCuando el problema se repite, muchas veces se convive con él como si fuera parte normal de la operación. Pero es un problema que se puede evaluar y abordar con una solución adecuada para cada aplicación.\n\nEn DANK acompañamos a las operaciones con evaluación en terreno, selección de la solución e instalación a cargo de nuestro equipo técnico local.\n\nSi quieres revisar tu caso, escríbenos o llámanos.\n\nUna operación más limpia es una operación más cuidada.',
+  'Una operación más limpia es una operación más cuidada.\n\nHoy, Día Mundial del Medio Ambiente, recordamos que reducir el polvo y los derrames en las correas transportadoras es parte de cuidar el entorno y a las personas.\n\nCada punto de transferencia tiene sus propias condiciones: el tipo de material, la velocidad de la correa y el espacio disponible. Por eso no existe una única solución para todos los casos, y es importante evaluar cada aplicación.\n\nEn DANK acompañamos a las operaciones en esa tarea, con evaluación, selección e instalación de soluciones, y trabajamos con la tecnología Airscrape de ScrapeTec.\n\nTe invitamos a conversar con nuestro equipo técnico y revisar juntos tu operación.\n\nCuidemos el entorno en cada turno.']},
+ {id:'minero',n:'Día del Minero',m:8,d:10,tag:'#DíaDelMinero',v:['Hoy es el Día del Minero.\n\nQueremos saludar a las mineras y los mineros que trabajan cada día para que las operaciones no se detengan, en turnos largos, lejos de sus familias y en condiciones exigentes.\n\nSu trabajo es la base de la minería y merece todo nuestro reconocimiento. Gracias a ellos y ellas, Chile tiene una industria clave para el país.\n\nTambién saludamos a quienes los apoyan desde la mantención, la ingeniería, la logística y la administración.\n\nEn DANK es un orgullo acompañar a las operaciones mineras con nuestras soluciones y nuestro equipo técnico.\n\nGracias por el esfuerzo y el compromiso de cada día.\n\nFeliz Día del Minero.',
+  'El 10 de agosto celebramos a quienes trabajan en la minería.\n\nDesde DANK saludamos a las personas que operan, mantienen y cuidan los equipos, y también a las familias que los esperan al final de cada turno. Sabemos que el trabajo en minería exige preparación, disciplina y mucho trabajo en equipo.\n\nCada vez que visitamos una operación, vemos de cerca ese compromiso: técnicos y operadores atentos a cada detalle, con la idea de que el equipo siga funcionando y de que todos vuelvan a casa bien.\n\nHoy queremos decirles gracias, por su trabajo y por confiar en nosotros.\n\nFeliz Día del Minero.',
+  'Detrás de cada tonelada hay personas.\n\nHoy, Día del Minero, queremos reconocer el trabajo de las mineras y los mineros de Chile, y agradecerles por mantener en marcha una industria clave para el país.\n\nSu trabajo se hace muchas veces de noche, con frío, con calor, en altura y lejos de casa. Y aun así, cada turno se cumple con responsabilidad y con espíritu de equipo.\n\nEn DANK trabajamos para que los equipos de las operaciones funcionen mejor, con soluciones para vibraciones, suspensión y control de polvo. Pero sabemos que nada de eso sería posible sin las personas que hacen su trabajo todos los días.\n\nEs un orgullo acompañarlos.\n\nFeliz Día del Minero.']},
+ {id:'patrias',n:'Fiestas Patrias',m:9,d:18,tag:'#FiestasPatrias',v:['Te deseamos unas felices Fiestas Patrias.\n\nLlegó el 18 de septiembre y es un buen momento para pausar, después de un año de mucho trabajo. Que sean días de descanso, de compartir con tu familia, de disfrutar de nuestras tradiciones y de reunirte con quienes más quieres.\n\nDesde DANK saludamos a todos los equipos y las empresas con las que trabajamos, y agradecemos la confianza que nos entregan durante el año.\n\nTambién queremos acordarnos de quienes trabajan en turno durante estos días, para que las operaciones sigan en marcha. Gracias por el compromiso.\n\nCuídate, disfruta y celebra con responsabilidad.\n\nFeliz 18.',
+  'Llegó el 18 de septiembre y es momento de pausar.\n\nDesde DANK saludamos a los equipos, a las empresas y a las personas con las que trabajamos. Que estas Fiestas Patrias te permitan descansar, compartir y celebrar con los tuyos, con empanadas, asado y buena compañía.\n\nSabemos que durante el año el ritmo de trabajo es exigente, y por eso estos días son una buena ocasión para renovar energías.\n\nVolveremos con ganas de seguir acompañando a tu operación, con evaluación en terreno, soluciones adecuadas y un equipo técnico cercano.\n\nQue estos días te traigan alegría, buenos recuerdos y mucho descanso.\n\nDisfruta y cuídate.\n\nFelices Fiestas Patrias.',
+  'Fiestas Patrias: días para la familia, la mesa grande y las tradiciones.\n\nTe deseamos que las disfrutes con tranquilidad, que descanses y que compartas con las personas que quieres. Después de un año de trabajo, es justo tomarse un respiro.\n\nQueremos mandar un saludo especial a quienes trabajan en turno durante estos días, en faenas y en operaciones, para que todo siga funcionando. Gracias por el compromiso y por cuidar lo que importa.\n\nDesde DANK, un abrazo para cada uno de los equipos con los que trabajamos.\n\nQue sean unos días muy bonitos y que todos vuelvan a casa bien.\n\nFelices Fiestas Patrias.']},
+ {id:'navidad',n:'Navidad',m:12,d:25,tag:'#Navidad',v:['Te deseamos una Feliz Navidad.\n\nGracias por confiar en nosotros durante este año. Fue un año de mucho trabajo y queremos agradecerte por cada conversación, cada evaluación y cada proyecto compartido.\n\nTrabajar con operaciones mineras e industriales nos exige estar cerca, escuchar lo que pasa en terreno y buscar soluciones que realmente sirvan. Esa confianza que nos entregas es lo que más valoramos.\n\nEstas fiestas son una buena ocasión para descansar, compartir en familia y renovar energías para lo que viene.\n\nQue tengas una Navidad tranquila y un buen comienzo de año.\n\nNos vemos pronto, con más ganas de acompañar a tu operación.',
+  'Llegó la Navidad y queremos saludarte.\n\nDesde DANK agradecemos la confianza de cada persona y cada equipo con el que trabajamos. Sigue siendo un gusto acompañar a las operaciones, desde la primera visita a terreno hasta la puesta en marcha de cada solución.\n\nDurante el año conversamos sobre vibraciones, correas, polvo y continuidad operacional, y aprendimos mucho de lo que pasa día a día en tu operación. Gracias por compartirlo con nosotros.\n\nTe deseamos una Navidad tranquila, con tiempo para descansar y compartir con los tuyos.\n\nQue el próximo año venga con metas cumplidas y operaciones más continuas.\n\nFeliz Navidad.',
+  'Cierra el año y es momento de agradecer.\n\nGracias por trabajar con nosotros y por darnos la oportunidad de acompañar a tu operación. Cada proyecto es una oportunidad para aprender y para hacer mejor las cosas, y eso se logra gracias a la confianza de quienes nos reciben en terreno.\n\nPara quienes trabajan estos días en turno, un reconocimiento especial. Gracias por mantener las operaciones en marcha mientras otros descansan.\n\nEn DANK queremos desearte unas fiestas llenas de paz, salud y buenos momentos en familia. Que el próximo año sea un año de oportunidades y de trabajo seguro.\n\nFeliz Navidad y buenas fiestas.']}
+];
+function fItems(){
+  const t=parse(todayISO());
+  const all=FECHAS.map(f=>({id:f.id,n:f.n,m:f.m,d:f.d,vers:f.v,tag:f.tag,custom:false})).concat((S.fx||[]).map(x=>{const dt=parse(x.date);return {id:x.id,n:x.n,m:dt.getMonth()+1,d:dt.getDate(),vers:null,tag:'',custom:true};}));
+  return all.map(f=>{let dt=new Date(t.getFullYear(),f.m-1,f.d);if(dt<t)dt=new Date(t.getFullYear()+1,f.m-1,f.d);
+    const days=Math.round((dt-t)/864e5);const st=S.fechas&&S.fechas[f.id]||{};
+    const status=st.status&&st.year===dt.getFullYear()?st.status:'noiniciada';
+    return Object.assign(f,{dt,days,year:dt.getFullYear(),status});}).sort((a,b)=>a.days-b.days);
+}
+function fGen(f){
+  if(!f.vers)return '';
+  const st=S.fechas&&S.fechas[f.id]||{},b=f.vers[(st.v||0)%f.vers.length];
+  return b+'\n\nEquipo DANK\n\n'+[f.tag,'#Minería','#DankChile'].filter(Boolean).join(' ');}
+const fText=f=>{const st=S.fechas&&S.fechas[f.id];return st&&st.text!==undefined?st.text:fGen(f);};
+const fCount=d=>d===0?'Hoy':d===1?'Mañana':'Faltan '+d+' días';
+function updFBadge(){const b=document.getElementById('fbtn');if(!b)return;
+  const n=fItems().find(f=>f.status!=='publicada');
+  b.innerHTML='Fechas importantes'+(n?'<span class="fbadge" title="'+E(n.n)+'">'+(n.days===0?'hoy':n.days+' d')+'</span>':'');}
+function renderFechas(){
+  const el=document.getElementById('fechas');if(!el)return;
+  const its=fItems();
+  el.innerHTML='<div class="fhead"><div><h2>Fechas importantes</h2><p class="hint" style="margin:0">Ordenadas por la más próxima. Cada una tiene su caja para preparar la publicación.</p></div>'+
+   '<div class="fadd"><label>Nueva fecha<input type="text" id="fx-name" placeholder="Nombre de la fecha"></label><label>Día<input type="date" id="fx-date"></label><button class="btn" type="button" data-act="f-add">Agregar fecha</button></div></div>'+
+   '<div class="fgrid">'+its.map(f=>{const near=f.days<=14&&f.status!=='publicada';const txt=fText(f);
+    return '<article class="panel fcard'+(near?' near':'')+'" id="fc-'+f.id+'"><div class="ft"><div><h3>'+E(f.n)+'</h3><div class="fd">'+E(f.dt.toLocaleDateString('es-CL',{weekday:'long',day:'numeric',month:'long',year:'numeric'}))+'</div></div>'+
+     '<span class="fcount'+(f.days===0?' hoy':near?' near':'')+'">'+fCount(f.days)+'</span></div>'+
+     '<label class="hint" for="ft-'+f.id+'">Texto de la publicación <span id="fn-'+f.id+'">'+txt.length+' / 3000</span></label>'+
+     '<textarea id="ft-'+f.id+'" data-act="f-text" data-id="'+f.id+'" placeholder="Escribe aquí la publicación">'+E(txt)+'</textarea>'+
+     '<div class="actions"><select data-act="f-status" data-id="'+f.id+'" aria-label="Estado">'+Object.keys(STATUS).map(k=>'<option value="'+k+'"'+(f.status===k?' selected':'')+'>'+STATUS[k][0]+'</option>').join('')+'</select>'+
+     (f.custom?'':'<button class="btn" type="button" data-act="f-reset" data-id="'+f.id+'">Generar otra versión</button>')+'<button class="btn" type="button" data-act="f-copy" data-id="'+f.id+'">Copiar texto</button>'+(f.custom?'<button class="btn" type="button" data-act="f-del" data-id="'+f.id+'">Quitar fecha</button>':'')+'</div></article>';}).join('')+'</div>';
+  fFit();updFBadge();
+}
+function fFit(id){(id?[document.getElementById('ft-'+id)]:document.querySelectorAll('#fechas textarea[data-act="f-text"]')).forEach(t=>{if(!t)return;t.style.height='auto';t.style.height=Math.max(260,t.scrollHeight+6)+'px';});}
+/* Eventos */
+const app=document.getElementById('app');
+function copyText(text,btn){
+  const done=()=>{const o=btn.textContent;btn.textContent='Copiado';setTimeout(()=>btn.textContent=o,1400);};
+  const fb=()=>{const t=document.createElement('textarea');t.value=text;t.style.position='fixed';t.style.opacity='0';document.body.appendChild(t);t.select();try{document.execCommand('copy');done();}catch(e){btn.textContent='Selecciona y copia a mano';}t.remove();};
+  try{navigator.clipboard.writeText(text).then(done,fb);}catch(e){fb();}
+}
+app.addEventListener('click',e=>{
+  const b=e.target.closest('[data-act]');if(!b)return;const act=b.dataset.act,id=b.dataset.id;
+  if(act==='pdfdel'){deletePdf(id,b.dataset.pid);return;}
+  if(act==='f-toggle'){const el=document.getElementById('fechas');el.hidden=!el.hidden;b.setAttribute('aria-expanded',String(!el.hidden));if(!el.hidden){fFit();el.scrollIntoView({behavior:'smooth',block:'start'});}return;}
+  if(act==='f-add'){const n=(document.getElementById('fx-name').value||'').trim(),d=document.getElementById('fx-date').value;if(!n||!d)return;S.fx=S.fx||[];S.fx.push({id:'x'+Date.now().toString(36),n,date:d});save();renderFechas();return;}
+  if(act==='f-del'){S.fx=(S.fx||[]).filter(x=>x.id!==id);if(S.fechas)delete S.fechas[id];save();renderFechas();return;}
+  if(act==='f-reset'){S.fechas=S.fechas||{};const st=S.fechas[id]=S.fechas[id]||{};st.v=(st.v||0)+1;delete st.text;save();renderFechas();return;}
+  if(act==='f-copy'){copyText(document.getElementById('ft-'+id).value,b);return;}
+  const fb=b.closest('.mixbox');
+  if(act==='filtro'||(fb&&!e.target.closest('input'))){const k=b.dataset.k||fb.dataset.k;tipoFilter=tipoFilter===k?'':k;fpage=1;renderMix();renderSlots();const el=document.getElementById('slots');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  if(act==='fclear'){tipoFilter='';renderMix();renderSlots();return;}
+  if(act==='fpage'){fpage=Number(b.dataset.p);renderSlots();const el=document.getElementById('slots');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  if(act==='week'){tipoFilter='';renderMix();activeWeek=Number(b.dataset.w);renderMain();const el=document.getElementById('slots');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});return;}
+  if(act==='goto'){tipoFilter='';renderMix();const sl=ALL.find(x=>x.id===id);activeWeek=sl.w;renderMain();const el=document.getElementById('slot-'+id);if(el){el.scrollIntoView({behavior:'smooth',block:'start'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600);}return;}
+  if(act==='regen'){const s=ens(id);delete s.text;save();renderMain();return;}
+  if(act==='regentitle'){const s=ens(id);s.tv=(s.tv||0)+1;delete s.title;save();const sl=ALL.find(x=>x.id===id),ti=document.getElementById('ti-'+id);if(ti)ti.value=genTitle(sl,sd(id));updCount(id);renderCal();return;}
+  if(act==='copy'){const ti=document.getElementById('ti-'+id);copyText((ti&&ti.value?ti.value+'\n\n':'')+document.getElementById('tx-'+id).value,b);return;}
+  if(act==='copycco'){copyText(b.closest('details').querySelector('textarea').value,b);return;}
+  if(act==='resetcco'){delete ens(id).cco;save();renderSlots();return;}
+});
+app.addEventListener('change',e=>{
+  const t=e.target,act=t.dataset.act,id=t.dataset.id;
+  if(act==='pdfup'){const f=t.files&&t.files[0];t.value='';uploadPdf(id,f);return;}
+  if(act==='weeks'){S.weeks=Number(t.value);tipoFilter='';save();renderMain();return;}
+  if(act==='f-status'){const f=fItems().find(x=>x.id===id);S.fechas=S.fechas||{};S.fechas[id]=Object.assign(S.fechas[id]||{},{status:t.value,year:f?f.year:new Date().getFullYear()});save();renderFechas();return;}
+  if(act==='tipo'){ens(id).tipo=t.value;save();renderMix();if(tipoFilter)renderSlots();else refreshTexts();return;}
+  if(act==='meta'){S.metas=S.metas||{};S.metas[t.dataset.k]=Math.max(0,Math.min(100,Number(t.value)||0));save();renderMix();return;}
+  if(act==='status'){ens(id).status=t.value;save();renderMain();return;}
+  if(act==='prod'){ens(id).prod=t.value;save();renderMain();return;}
+  if(act==='ccodone'){ens(id).ccoDone=t.checked;save();renderSlots();return;}
+  if(t.id==='cfg-start'&&t.value){S.start=iso(mondayOf(parse(t.value)));t.value=S.start;save();renderMain();return;}
+  if(act==='aud'){ens(id).aud=t.value;save();renderMain();return;}
+  if(act==='chk'){const s0=ens(id);s0.chk=s0.chk||{};s0.chk[t.dataset.k]=t.checked;save();const d=t.closest('details');const n=d.querySelectorAll('input:checked').length,m=d.querySelectorAll('input').length;d.querySelector('summary').textContent='Antes de publicar · '+n+'/'+m;return;}
+});
+app.addEventListener('input',e=>{
+  const t=e.target,act=t.dataset.act,id=t.dataset.id;
+  if(act==='f-text'){S.fechas=S.fechas||{};S.fechas[id]=Object.assign(S.fechas[id]||{},{text:t.value});save();const n=document.getElementById('fn-'+id);if(n)n.textContent=t.value.length+' / 3000';fFit(id);return;}
+  if(act==='title'){ens(id).title=t.value;save();updCount(id);renderCal();return;}
+  if(act==='text'){const s=ens(id);s.text=t.value;save();updCount(id);return;}
+  if(act==='cco'){ens(id).cco=t.value;save();return;}
+  if(false&&act==='kpi'){const w=t.dataset.w,f=t.dataset.f;S.kpi[w]=S.kpi[w]||{};S.kpi[w][f]=t.value===''?0:Math.max(0,Number(t.value)||0);save();updKpi();return;}
+  if(act==='cfg'){S.products[t.dataset.k][t.dataset.f]=t.value;save();refreshTexts();return;}
+  if(act==='contact'){S.contact[t.dataset.f]=t.value;save();refreshTexts();return;}
+  if(act==='gs'){S.gs[t.dataset.f]=t.value;save();refreshTexts();return;}
+});
+/* Al terminar de editar ajustes, refrescar los textos generados */
+app.addEventListener('focusout',e=>{
+  const t=e.target;
+  
+  setTimeout(()=>{if(remotePending&&!editing()){const d=remotePending;remotePending=null;applyRemote(d);}},50);
+});
+app.addEventListener('toggle',e=>{const d=e.target;if(d.matches&&d.matches('details.cco')){ens(d.dataset.id).ccoOpen=d.open;}else if(d.matches&&d.matches('details.srcd')){ens(d.dataset.id).srcClosed=!d.open;}else if(d.matches&&d.matches('details.chkl')){ens(d.dataset.id).chkOpen=d.open;}},true);
+
+/* Inicio */
+(async function init(){
+  renderAll();setSync('Cargando…');
+  try{
+    const r=await fetch('/api/state',{cache:'no-store'});
+    if(r.status===401){location.href='/login';return;}
+    if(!r.ok)throw new Error('estado '+r.status);
+    const j=await r.json();
+    if(j.data){S=merge(j.data);serverVersion=j.version;setSync('Cargado'+(j.updated_by_email?' · último cambio de '+j.updated_by_email:'')+'.');}
+    else{serverVersion=0;setSync('Calendario nuevo. Se guarda en cuanto hagas el primer cambio.');}
+    await loadPdfs();renderAll();
+  }catch(e){console.error(e);setSync('No se pudo cargar el calendario ('+(e&&e.message?e.message:'error')+'). Recarga la página.');}
+  setInterval(poll,15000);
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden)poll();});
+  const today=todayISO();const hit=ALL.find(sl=>iso(slotDate(sl))>=today&&sd(sl.id).status!=='publicada');
+  if(hit&&!S.slots['s1-1']){activeWeek=hit.w;renderMain();}
+})();
+})();
+</script>
+</body></html>
